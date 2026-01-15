@@ -1,0 +1,254 @@
+/* ================= BASE ================= */
+:root{
+  /* Highlight color is controlled by JS via --hl-color */
+  --hl-color: #fff3a3; /* default (yellow) */
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f7f7f7;
+  color: #222;
+  margin: 0;
+}
+
+.container {
+  max-width: 700px;
+  margin: 40px auto;
+  background: #fff;
+  padding: 30px;
+  border-radius: 6px;
+}
+
+h1, h2 {
+  margin: 0 0 15px 0;
+}
+
+p {
+  line-height: 1.5;
+}
+
+label {
+  display: block;
+  margin-top: 20px;
+}
+
+input[type="email"],
+input[type="text"],
+textarea {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  box-sizing: border-box;
+}
+
+textarea {
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+/* ================= BUTTONS ================= */
+button {
+  margin-top: 20px;
+  padding: 12px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background: #222;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.checkbox {
+  margin-top: 15px;
+}
+
+.footer {
+  margin-top: 30px;
+  font-size: 0.85em;
+  color: #666;
+}
+
+/* ================= PAYPAL (kept for later) ================= */
+.pp-P83V682NGXM66 {
+  text-align: center;
+  border: none;
+  border-radius: 0.25rem;
+  min-width: 11.625rem;
+  padding: 0 2rem;
+  height: 2.625rem;
+  font-weight: bold;
+  background-color: #FFD140;
+  color: #000000;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.paypal-wrap { margin-top: 10px; }
+.paypal-form {
+  display: inline-grid;
+  justify-items: center;
+  gap: 0.5rem;
+}
+.paypal-powered { font-size: 0.75rem; }
+.paypal-logo { height: 0.875rem; }
+
+/* ================= TIMER (WRITING + READING) ================= */
+#timerBox,
+.reading-timer {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: #fff3cd;
+  color: #664d03;
+  border: 2px solid #ffecb5;
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin: 0 auto 20px auto;
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-align: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+  max-width: 1200px;
+}
+
+#timeLeft {
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+/* Warning (<10 min in your JS) */
+#timerBox.warning,
+.reading-timer.warning {
+  background: #ffe5d0;
+  color: #7a2e00;
+  border-color: #ffb37a;
+}
+
+/* Danger (<5 min) */
+#timerBox.danger,
+.reading-timer.danger {
+  background: #f8d7da;
+  color: #842029;
+  border-color: #f1aeb5;
+  animation: pulseUrgent 1s infinite;
+}
+
+@keyframes pulseUrgent {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+/* ================= READING LAYOUT ================= */
+.reading-layout {
+  display: flex;
+  gap: 16px;
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
+.reading-panel {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px;
+  height: calc(100vh - 120px);
+  overflow: auto;
+  border: 1px solid #eee;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.06);
+}
+
+.reading-passage   { flex: 1; }
+.reading-questions { flex: 1; }
+
+/* Make passage comfortable to read */
+.passage {
+  line-height: 1.65;
+  font-size: 1.02rem;
+}
+
+/* Paragraph spacing */
+.passage p{
+  margin: 0 0 14px 0;
+  line-height: 1.65;
+}
+
+/* Question spacing */
+.q {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px dashed #eee;
+}
+
+/* ================= LANDING PAGE ================= */
+#picker button {
+  font-size: 18px;
+  padding: 14px 18px;
+}
+
+/* ================= HIGHLIGHTER ================= */
+.highlight-toolbar{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin: 6px 0 12px 0;
+  flex-wrap: wrap;
+}
+
+.highlight-toolbar button{
+  margin-top: 0;
+}
+
+.hlColorLabel{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top: 0;
+  font-size: 0.95rem;
+  color:#333;
+}
+
+#hlColor{
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background: #fff;
+  font-size: 0.95rem;
+}
+
+.hlTip{
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* Highlight itself (color set by CSS variable) */
+mark.hl{
+  background: var(--hl-color);
+  padding: 0 2px;
+  border-radius: 3px;
+}
+
+/* Allow selecting text for highlighting (copy still blocked by JS) */
+.no-copy{
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 900px){
+  .reading-layout{
+    flex-direction: column;
+  }
+  .reading-panel{
+    height: auto;
+    max-height: none;
+  }
+}

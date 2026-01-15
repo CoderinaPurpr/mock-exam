@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reading Results</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Reading Test Results</h1>
+    <p id="meta"></p>
+
+    <h2 id="scoreLine"></h2>
+
+    <div id="wrongBox"></div>
+
+    <button onclick="window.location.href='index.html'">Back to Token Page</button>
+  </div>
+
+  <script>
+    const meta = document.getElementById("meta");
+    const scoreLine = document.getElementById("scoreLine");
+    const wrongBox = document.getElementById("wrongBox");
+
+    const raw = sessionStorage.getItem("reading_result");
+    if (!raw) {
+      meta.textContent = "No results found. Please take the test first.";
+    } else {
+      const r = JSON.parse(raw);
+
+      const parts = [
+        `<strong>${escapeHtml(r.test_name || "Reading Test")}</strong>`,
+        `Email: ${escapeHtml(r.email || "")}`
+      ];
+
+      // show submission id if present (helps you debug / audit)
+      if (r.submission_id) {
+        parts.push(`Submission ID: <strong>${escapeHtml(r.submission_id)}</strong>`);
+      }
+
+      meta.innerHTML = parts.join("<br>");
+
+      scoreLine.textContent = `Score: ${r.score} / ${r.total}`;
+
+      if (!r.incorrect || r.incorrect.length === 0) {
+        wrongBox.innerHTML = "<p><strong>Perfect score.</strong> No incorrect answers.</p>";
+      } else {
+        const items = r.incorrect.map(x =>
+          `<li><strong>Q${escapeHtml(x.q)}</strong> — You: <em>${escapeHtml(x.your)}</em> | Correct: <strong>${escapeHtml(x.correct)}</strong></li>`
+        ).join("");
+
+        wrongBox.innerHTML = `
+          <h3>Incorrect answers</h3>
+          <ul>${items}</ul>
+        `;
+      }
+
+      // Optional: clear results after showing (prevents “stale” results)
+      // sessionStorage.removeItem("reading_result");
+    }
+
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"']/g, s => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[s]));
+    }
+  </script>
+</body>
+</html>

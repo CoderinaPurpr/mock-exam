@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IELTS Assessment Feedback</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>IELTS Assessment Feedback</h1>
+
+    <p>
+      Enter your submission token below. Tokens expire after <strong>12 hours</strong>.
+    </p>
+
+    <label>
+      Token<br>
+      <input type="text" id="tokenInput" placeholder="e.g., KZ-12ab3c4d" required>
+    </label>
+
+    <button id="continueBtn" type="button">Continue</button>
+    <p id="msg" class="footer"></p>
+
+    <div id="picker" style="display:none; margin-top: 20px;">
+      <hr>
+      <h2>Select a test</h2>
+
+      <button id="writingBtn" type="button" style="width:100%; margin-top:10px;">
+        Writing (Task 2 feedback)
+      </button>
+
+      <button id="readingBtn" type="button" style="width:100%; margin-top:10px;">
+        Reading (Test 1 – Passage 1)
+      </button>
+
+      <p class="footer" style="margin-top:12px;">
+        Your token must be valid to continue.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const WORKER_BASE = "https://submission-code-template.rvnvrn.workers.dev";
+
+    const tokenInput = document.getElementById("tokenInput");
+    const continueBtn = document.getElementById("continueBtn");
+    const msg = document.getElementById("msg");
+    const picker = document.getElementById("picker");
+    const writingBtn = document.getElementById("writingBtn");
+    const readingBtn = document.getElementById("readingBtn");
+
+    // Fresh landing
+    sessionStorage.removeItem("wc_token");
+    sessionStorage.removeItem("reading_result");
+    sessionStorage.removeItem("reading_submission_id");
+
+    tokenInput.focus();
+    tokenInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") continueBtn.click();
+    });
+
+    continueBtn.addEventListener("click", async () => {
+      msg.textContent = "";
+      picker.style.display = "none";
+
+      const token = tokenInput.value.trim();
+      if (!token) {
+        msg.textContent = "Please enter a token.";
+        return;
+      }
+
+      continueBtn.disabled = true;
+      continueBtn.textContent = "Checking token...";
+
+      try {
+        const fd = new FormData();
+        fd.append("token", token);
+
+        const res = await fetch(`${WORKER_BASE}/validate`, { method: "POST", body: fd });
+
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); }
+        catch { data = { ok: false, error: "Unexpected response from server." }; }
+
+        if (!data.ok) {
+          msg.textContent = data.error || "Token validation failed.";
+          return;
+        }
+
+        sessionStorage.setItem("wc_token", token);
+
+        msg.textContent = "Token accepted. Choose a test:";
+        picker.style.display = "block";
+
+      } catch (e) {
+        msg.textContent = "Network error. Please try again.";
+      } finally {
+        continueBtn.disabled = false;
+        continueBtn.textContent = "Continue";
+      }
+    });
+
+    writingBtn.addEventListener("click", () => {
+      window.location.href = "submit.html";
+    });
+
+    readingBtn.addEventListener("click", () => {
+      window.location.href = "reading.html";
+    });
+  </script>
+</body>
+</html>

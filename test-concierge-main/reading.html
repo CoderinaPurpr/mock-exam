@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IELTS Eleven - Reading Test 1 Passage 1</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Sticky timer bar -->
+  <div id="timerBox" class="reading-timer">
+    📘 IELTS Eleven - Reading Test 1 (Passage 1) —
+    Time remaining: <span id="timeLeft">23:00</span>
+  </div>
+
+  <div class="reading-layout">
+
+    <!-- LEFT: Passage (swapped to left) -->
+    <div class="reading-panel reading-passage">
+      <h2>Reading Passage 1: Nutmeg – a valuable spice</h2>
+
+      <!-- Highlighter toolbar (color choices + persistent + remove) -->
+      <div class="highlight-toolbar">
+        <button id="hlToggle" type="button">Highlight: OFF</button>
+
+        <label class="hlColorLabel">
+          Color:
+          <select id="hlColor">
+            <option value="#fff3a3">Yellow</option>
+            <option value="#a7e3ff">Blue</option>
+            <option value="#b7f7c1">Green</option>
+            <option value="#ffc1e3">Pink</option>
+            <option value="#e0e0e0">Gray</option>
+          </select>
+        </label>
+
+        <button id="hlClear" type="button">Clear highlights</button>
+        <span class="hlTip">Tip: turn ON, select text to highlight. Click a highlight to remove it.</span>
+      </div>
+
+      <!-- Passage in paragraphs (no PRE) -->
+      <div id="passage" class="passage no-copy">
+        <p>The nutmeg tree, Myristica fragrans, is a large evergreen tree native to Southeast Asia. Until the late 18th century, it only grew in one place in the world: a small group of islands in the Banda Sea, part of the Moluccas - or Spice Islands - in northeastern Indonesia. The tree is thickly branched with dense foliage of tough, dark green oval leaves, and produces small, yellow, bell-shaped flowers and pale yellow pear-shaped fruits. The fruit is encased in a fleshy husk. When the fruit is ripe, this husk splits into two halves along a ridge running the length of the fruit. Inside is a purple-brown shiny seed, 2-3 cm long by about 2 cm across, surrounded by a lacy red or crimson covering called an 'aril'. These are the sources of the two spices nutmeg and mace, the former being produced from the dried seed and the latter from the aril.</p>
+
+        <p>Nutmeg was a highly prized and costly ingredient in European cuisine in the Middle Ages, and was used as a flavouring, medicinal, and preservative agent. Throughout this period, the Arabs were the exclusive importers of the spice to Europe. They sold nutmeg for high prices to merchants based in Venice, but they never revealed the exact location of the source of this extremely valuable commodity. The Arab-Venetian dominance of the trade finally ended in 1512, when the Portuguese reached the Banda Islands and began exploiting its precious resources.</p>
+
+        <p>Always in danger of competition from neighbouring Spain, the Portuguese began subcontracting their spice distribution to Dutch traders. Profits began to flow into the Netherlands, and the Dutch commercial fleet swiftly grew into one of the largest in the world. The Dutch quietly gained control of most of the shipping and trading of spices in Northern Europe. Then, in 1580, Portugal fell under Spanish rule, and by the end of the 16th century the Dutch found themselves locked out of the market. As prices for pepper, nutmeg, and other spices soared across Europe, they decided to fight back.</p>
+
+        <p>In 1602, Dutch merchants founded the VOC, a trading corporation better known as the Dutch East India Company. By 1617, the VOC was the richest commercial operation in the world. The company had 50,000 employees worldwide, with a private army of 30,000 men and a fleet of 200 ships. At the same time, thousands of people across Europe were dying of the plague, a highly contagious and deadly disease. Doctors were desperate for a way to stop the spread of this disease, and they decided nutmeg held the cure. Everybody wanted nutmeg, and many were willing to spare no expense to have it. Nutmeg bought for a few pennies in Indonesia could be sold for 68,000 times its original cost on the streets of London. The only problem was the short supply. And that's where the Dutch found their opportunity.</p>
+
+        <p>The Banda Islands were ruled by local sultans who insisted on maintaining a neutral trading policy towards foreign powers. This allowed them to avoid the presence of Portuguese or Spanish troops on their soil, but it also left them unprotected from other invaders. In 1621, the Dutch arrived and took over. Once securely in control of the Bandas, the Dutch went to work protecting their new investment. They concentrated all nutmeg production into a few easily guarded areas, uprooting and destroying any trees outside the plantation zones. Anyone caught growing a nutmeg seedling or carrying seeds without the proper authority was severely punished. In addition, all exported nutmeg was covered with lime to make sure there was no chance a fertile seed which could be grown elsewhere would leave the islands. There was only one obstacle to Dutch domination. One of the Banda Islands, a sliver of land called Run, only 3 km long by less than 1 km wide, was under the control of the British. After decades of fighting for control of this tiny island, the Dutch and British arrived at a compromise settlement, the Treaty of Breda, in 1667. Intent on securing their hold over every nutmeg-producing island, the Dutch offered a trade: if the British would give them the island of Run, they would in turn give Britain a distant and much less valuable island in North America. The British agreed. That other island was Manhattan, which is how New Amsterdam became New York. The Dutch now had a monopoly over the nutmeg trade which would last for another century.</p>
+
+        <p>Then, in 1770, a Frenchman named Pierre Poivre successfully smuggled nutmeg plants to safety in Mauritius, an island off the coast of Africa. Some of these were later exported to the Caribbean where they thrived, especially on the island of Grenada. Next, in 1778, a volcanic eruption in the Banda region caused a tsunami that wiped out half the nutmeg groves. Finally, in 1809, the British returned to Indonesia and seized the Banda Islands by force. They returned the islands to the Dutch in 1817, but not before transplanting hundreds of nutmeg seedlings to plantations in several locations across southern Asia. The Dutch nutmeg monopoly was over.</p>
+
+        <p>Today, nutmeg is grown in Indonesia, the Caribbean, India, Malaysia, Papua New Guinea and Sri Lanka, and world nutmeg production is estimated to average between 10,000 and 12,000 tonnes per year.</p>
+      </div>
+    </div>
+
+    <!-- RIGHT: Questions -->
+    <div class="reading-panel reading-questions">
+      <h2>Questions (1–13)</h2>
+
+      <p><strong>Questions 1–4</strong><br>
+      Complete the notes below. Choose <strong>ONE WORD ONLY</strong> from the passage.</p>
+
+      <div class="q">
+        <label>1) The leaves of the tree are <input type="text" id="q1" placeholder="one word"></label>
+      </div>
+      <div class="q">
+        <label>2) The <input type="text" id="q2" placeholder="one word"> surrounds the fruit and breaks open when the fruit is ripe.</label>
+      </div>
+      <div class="q">
+        <label>3) The <input type="text" id="q3" placeholder="one word"> is used to produce the spice nutmeg.</label>
+      </div>
+      <div class="q">
+        <label>4) The covering known as the aril is used to produce <input type="text" id="q4" placeholder="one word"></label>
+      </div>
+
+      <hr>
+
+      <p><strong>Questions 5–7</strong><br>
+      Do the statements agree with the information? Write TRUE / FALSE / NOT GIVEN.</p>
+
+      <div class="q">
+        <p>5) In the Middle Ages, most Europeans knew where nutmeg was grown.</p>
+        <label><input type="radio" name="q5" value="TRUE"> TRUE</label><br>
+        <label><input type="radio" name="q5" value="FALSE"> FALSE</label><br>
+        <label><input type="radio" name="q5" value="NOT GIVEN"> NOT GIVEN</label>
+      </div>
+
+      <div class="q">
+        <p>6) The VOC was the world's first major trading company.</p>
+        <label><input type="radio" name="q6" value="TRUE"> TRUE</label><br>
+        <label><input type="radio" name="q6" value="FALSE"> FALSE</label><br>
+        <label><input type="radio" name="q6" value="NOT GIVEN"> NOT GIVEN</label>
+      </div>
+
+      <div class="q">
+        <p>7) Following the Treaty of Breda, the Dutch had control of all the islands where nutmeg grew.</p>
+        <label><input type="radio" name="q7" value="TRUE"> TRUE</label><br>
+        <label><input type="radio" name="q7" value="FALSE"> FALSE</label><br>
+        <label><input type="radio" name="q7" value="NOT GIVEN"> NOT GIVEN</label>
+      </div>
+
+      <hr>
+
+      <p><strong>Questions 8–13</strong><br>
+      Complete the table below. Choose <strong>ONE WORD ONLY</strong> from the passage.</p>
+
+      <div class="q"><label>8) Nutmeg was brought to Europe by the <input type="text" id="q8" placeholder="one word"></label></div>
+      <div class="q"><label>9) Demand grew as it was believed effective against the disease known as the <input type="text" id="q9" placeholder="one word"></label></div>
+      <div class="q"><label>10) The Dutch put <input type="text" id="q10" placeholder="one word"> on nutmeg to avoid it being cultivated elsewhere.</label></div>
+      <div class="q"><label>11) The Dutch finally obtained the island of <input type="text" id="q11" placeholder="one word"></label></div>
+      <div class="q"><label>12) Nutmeg plants were secretly taken to <input type="text" id="q12" placeholder="one word"></label></div>
+      <div class="q"><label>13) Half the plantations were destroyed by a <input type="text" id="q13" placeholder="one word"></label></div>
+
+      <hr>
+
+      <label>
+        Email (so you can match a submission later)<br>
+        <input type="email" id="email" placeholder="student@example.com" required>
+      </label>
+
+      <button id="submitBtn" type="button">Submit Reading Test</button>
+      <p id="msg" class="footer"></p>
+    </div>
+
+  </div>
+
+<script>
+  const WORKER_BASE = "https://submission-code-template.rvnvrn.workers.dev";
+
+  const token = sessionStorage.getItem("wc_token");
+  if (!token) window.location.href = "index.html";
+
+  // --- 23 minute timer (UI enforcement) ---
+  const totalSeconds = 23 * 60;
+  let remaining = totalSeconds;
+
+  // Validate token on load (sets sessionStart server-side)
+  (async () => {
+    try {
+      const fd = new FormData();
+      fd.append("token", token);
+
+      const res = await fetch(`${WORKER_BASE}/validate`, { method: "POST", body: fd });
+      const data = await res.json();
+
+      if (!data.ok) {
+        alert(data.error || "Token invalid.");
+        sessionStorage.removeItem("wc_token");
+        window.location.href = "index.html";
+      }
+    } catch (e) {
+      alert("Network error validating token.");
+      window.location.href = "index.html";
+    }
+  })();
+
+  const timeLeftEl = document.getElementById("timeLeft");
+  const timerBox = document.getElementById("timerBox");
+  const msg = document.getElementById("msg");
+  const submitBtn = document.getElementById("submitBtn");
+
+  function showHint(text) {
+    if (!msg) return;
+    msg.textContent = text;
+    setTimeout(() => { msg.textContent = ""; }, 2500);
+  }
+
+  function renderTime() {
+    const m = Math.floor(remaining / 60).toString().padStart(2, "0");
+    const s = (remaining % 60).toString().padStart(2, "0");
+    timeLeftEl.textContent = `${m}:${s}`;
+
+    if (remaining <= 5 * 60) timerBox.classList.add("danger");
+    else if (remaining <= 10 * 60) timerBox.classList.add("warning");
+  }
+  renderTime();
+
+  const tick = setInterval(() => {
+    remaining--;
+    renderTime();
+    if (remaining <= 0) {
+      clearInterval(tick);
+      submitBtn.disabled = true;
+      msg.textContent = "Time is up. Please request a new token.";
+    }
+  }, 1000);
+
+  // --- Best-effort block Find (Ctrl+F / Cmd+F) and Copy ---
+  document.addEventListener("keydown", (e) => {
+    const key = (e.key || "").toLowerCase();
+    const isMac = navigator.platform.toUpperCase().includes("MAC");
+    const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey;
+
+    if (ctrlOrCmd && key === "f") {
+      e.preventDefault();
+      showHint("Find is disabled for this reading test.");
+      return;
+    }
+
+    if (ctrlOrCmd && key === "c") {
+      const sel = window.getSelection();
+      if (sel && sel.toString().length > 0) {
+        e.preventDefault();
+        showHint("Copy is disabled for this reading test.");
+      }
+      return;
+    }
+
+    if (ctrlOrCmd && key === "p") {
+      e.preventDefault();
+      showHint("Printing is disabled for this reading test.");
+      return;
+    }
+  });
+
+  // Block right-click/copy on the passage
+  const passageEl = document.getElementById("passage");
+  if (passageEl) {
+    passageEl.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      showHint("Copy is disabled for this reading test.");
+    });
+    passageEl.addEventListener("copy", (e) => { e.preventDefault(); showHint("Copy is disabled."); });
+    passageEl.addEventListener("cut", (e) => { e.preventDefault(); showHint("Copy is disabled."); });
+  }
+
+  // --- Highlighter (persistent + color choices + click-to-remove) ---
+  let highlightOn = false;
+  const hlToggle = document.getElementById("hlToggle");
+  const hlClear = document.getElementById("hlClear");
+  const hlColor = document.getElementById("hlColor");
+
+  // Use a stable key per passage/test so highlights don't mix between tests
+  const HIGHLIGHT_STORE_KEY = "reading_highlights_IELTS11_R1_P1";
+  const COLOR_STORE_KEY = "reading_highlight_color_IELTS11_R1_P1";
+
+  function saveHighlightsToStorage() {
+    if (!passageEl) return;
+    localStorage.setItem(HIGHLIGHT_STORE_KEY, passageEl.innerHTML);
+  }
+
+  function restoreHighlightsFromStorage() {
+    if (!passageEl) return;
+    const saved = localStorage.getItem(HIGHLIGHT_STORE_KEY);
+    if (saved) passageEl.innerHTML = saved;
+  }
+
+  function unwrapMark(markEl) {
+    const parent = markEl.parentNode;
+    while (markEl.firstChild) parent.insertBefore(markEl.firstChild, markEl);
+    parent.removeChild(markEl);
+    parent.normalize();
+  }
+
+  function clearAllHighlights() {
+    if (!passageEl) return;
+    passageEl.querySelectorAll("mark.hl").forEach(unwrapMark);
+    localStorage.removeItem(HIGHLIGHT_STORE_KEY);
+  }
+
+  // Restore saved highlights on load
+  restoreHighlightsFromStorage();
+
+  // Init color
+  (function initHighlightColor() {
+    if (!hlColor) return;
+    const saved = localStorage.getItem(COLOR_STORE_KEY);
+    if (saved) hlColor.value = saved;
+    document.documentElement.style.setProperty("--hl-color", hlColor.value);
+  })();
+
+  if (hlColor) {
+    hlColor.addEventListener("change", () => {
+      localStorage.setItem(COLOR_STORE_KEY, hlColor.value);
+      document.documentElement.style.setProperty("--hl-color", hlColor.value);
+    });
+  }
+
+  if (hlToggle) {
+    hlToggle.addEventListener("click", () => {
+      highlightOn = !highlightOn;
+      hlToggle.textContent = highlightOn ? "Highlight: ON" : "Highlight: OFF";
+    });
+  }
+
+  // Click-to-remove
+  if (passageEl) {
+    passageEl.addEventListener("click", (e) => {
+      const mark = e.target.closest && e.target.closest("mark.hl");
+      if (!mark) return;
+      unwrapMark(mark);
+      saveHighlightsToStorage();
+    });
+  }
+
+  // Select-to-highlight
+  if (passageEl) {
+    passageEl.addEventListener("mouseup", () => {
+      if (!highlightOn) return;
+
+      const sel = window.getSelection();
+      const text = sel ? sel.toString().trim() : "";
+      if (!text) return;
+
+      const range = sel.getRangeAt(0);
+
+      // Only allow highlighting inside passage
+      if (!passageEl.contains(range.commonAncestorContainer)) {
+        sel.removeAllRanges();
+        return;
+      }
+
+      const mark = document.createElement("mark");
+      mark.className = "hl";
+
+      try {
+        range.surroundContents(mark);
+        sel.removeAllRanges();
+        saveHighlightsToStorage();
+      } catch {
+        sel.removeAllRanges();
+        // Selection across multiple nodes/paragraphs can throw; ignore for stability.
+      }
+    });
+  }
+
+  if (hlClear) {
+    hlClear.addEventListener("click", () => {
+      clearAllHighlights();
+    });
+  }
+
+  // NOTE: Screenshots cannot be reliably blocked by websites in normal browsers.
+  // Best-effort discouragement would be watermarks/blur-on-tab-switch, but not true blocking.
+
+  // --- Answer key ---
+  const key = {
+    1: "oval",
+    2: "husk",
+    3: "seed",
+    4: "mace",
+    5: "FALSE",
+    6: "NOT GIVEN",
+    7: "TRUE",
+    8: "Arabs",
+    9: "plague",
+    10: "lime",
+    11: "Run",
+    12: "Mauritius",
+    13: "tsunami"
+  };
+
+  function norm(s) {
+    return (s || "").toString().trim().toLowerCase();
+  }
+
+  function getRadio(name) {
+    const el = document.querySelector(`input[name="${name}"]:checked`);
+    return el ? el.value : "";
+  }
+
+  function grade() {
+    const answers = {};
+    const incorrect = [];
+
+    [1,2,3,4,8,9,10,11,12,13].forEach(n => {
+      answers[n] = document.getElementById(`q${n}`).value.trim();
+    });
+
+    answers[5] = getRadio("q5");
+    answers[6] = getRadio("q6");
+    answers[7] = getRadio("q7");
+
+    for (let i = 1; i <= 13; i++) {
+      if (!answers[i]) return { ok: false, error: `Question ${i} is unanswered.` };
+    }
+
+    let score = 0;
+    for (let i = 1; i <= 13; i++) {
+      const correct = key[i];
+      const isWord = [1,2,3,4,8,9,10,11,12,13].includes(i);
+
+      const isCorrect = isWord
+        ? norm(answers[i]) === norm(correct)
+        : answers[i] === correct;
+
+      if (isCorrect) score++;
+      else incorrect.push({ q: i, your: answers[i], correct });
+    }
+
+    return { ok: true, score, total: 13, incorrect, answers };
+  }
+
+  submitBtn.addEventListener("click", async () => {
+    msg.textContent = "";
+
+    if (remaining <= 0) {
+      msg.textContent = "Time is up. Please request a new token.";
+      return;
+    }
+
+    const email = document.getElementById("email").value.trim();
+    if (!email) {
+      msg.textContent = "Please enter your email.";
+      return;
+    }
+
+    const result = grade();
+    if (!result.ok) {
+      msg.textContent = result.error;
+      return;
+    }
+
+    let submissionId = null;
+
+    try {
+      const fd = new FormData();
+      fd.append("token", token);
+      fd.append("email", email);
+      fd.append("test_id", "IELTS11_R1_P1");
+      fd.append("score", String(result.score));
+      fd.append("total", String(result.total));
+      fd.append("answers_json", JSON.stringify(result.answers));
+      fd.append("incorrect_json", JSON.stringify(result.incorrect));
+      fd.append("seconds_left", String(remaining));
+      fd.append("duration_seconds", String(totalSeconds));
+
+      const res = await fetch(`${WORKER_BASE}/reading/submit`, { method: "POST", body: fd });
+      const data = await res.json();
+
+      if (!data.ok) {
+        msg.textContent = data.error || "Could not submit.";
+        return;
+      }
+
+      submissionId = data.submission_id;
+      sessionStorage.setItem("reading_submission_id", String(submissionId));
+    } catch (e) {
+      console.error(e);
+      msg.textContent = "Network error submitting test. Please try again.";
+      return;
+    }
+
+    sessionStorage.setItem("reading_result", JSON.stringify({
+      test_name: "IELTS Eleven - Reading Test 1 Passage 1",
+      email,
+      score: result.score,
+      total: result.total,
+      incorrect: result.incorrect,
+      submission_id: submissionId
+    }));
+
+    sessionStorage.removeItem("wc_token");
+    window.location.href = "reading_results.html";
+  });
+</script>
+
+</body>
+</html>
