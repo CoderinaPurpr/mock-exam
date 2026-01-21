@@ -124,9 +124,26 @@
   </div>
 
 <script>
-  // --- 23 minute timer (UI enforcement) ---
-  const totalSeconds = 23 * 60;
-  let remaining = totalSeconds;
+  // ----------------------------
+  // Timer (persists across refresh)
+  // ----------------------------
+  const TOTAL_SECONDS = 23 * 60;
+  const TIMER_KEY = "reading_start_ts_IELTS11_R1_P1";
+
+  let startTs = localStorage.getItem(TIMER_KEY);
+  if (!startTs) {
+    startTs = Date.now();
+    localStorage.setItem(TIMER_KEY, String(startTs));
+  } else {
+    startTs = parseInt(startTs, 10);
+  }
+
+  function computeRemaining() {
+    const elapsed = Math.floor((Date.now() - startTs) / 1000);
+    return Math.max(0, TOTAL_SECONDS - elapsed);
+  }
+
+  let remaining = computeRemaining();
 
   const timeLeftEl = document.getElementById("timeLeft");
   const timerBox = document.getElementById("timerBox");
@@ -150,16 +167,19 @@
   renderTime();
 
   const tick = setInterval(() => {
-    remaining--;
+    remaining = computeRemaining();
     renderTime();
+
     if (remaining <= 0) {
       clearInterval(tick);
       submitBtn.disabled = true;
-      msg.textContent = "Time is up. Please continue to the next section or submit what you have.";
+      msg.textContent = "Time is up. Please submit what you have.";
     }
   }, 1000);
 
-  // --- Best-effort block Find (Ctrl+F / Cmd+F) and Copy ---
+  // ----------------------------
+  // Best-effort block Find/Copy/Print
+  // ----------------------------
   document.addEventListener("keydown", (e) => {
     const key = (e.key || "").toLowerCase();
     const isMac = navigator.platform.toUpperCase().includes("MAC");
@@ -187,7 +207,6 @@
     }
   });
 
-  // Block right-click/copy on the passage
   const passageEl = document.getElementById("passage");
   if (passageEl) {
     passageEl.addEventListener("contextmenu", (e) => {
@@ -198,13 +217,14 @@
     passageEl.addEventListener("cut", (e) => { e.preventDefault(); showHint("Copy is disabled."); });
   }
 
-  // --- Highlighter (persistent + color choices + click-to-remove) ---
+  // ----------------------------
+  // Highlighter (persistent)
+  // ----------------------------
   let highlightOn = false;
   const hlToggle = document.getElementById("hlToggle");
   const hlClear = document.getElementById("hlClear");
   const hlColor = document.getElementById("hlColor");
 
-  // Use a stable key per passage/test so highlights don't mix between tests
   const HIGHLIGHT_STORE_KEY = "reading_highlights_IELTS11_R1_P1";
   const COLOR_STORE_KEY = "reading_highlight_color_IELTS11_R1_P1";
 
@@ -232,10 +252,8 @@
     localStorage.removeItem(HIGHLIGHT_STORE_KEY);
   }
 
-  // Restore saved highlights on load
   restoreHighlightsFromStorage();
 
-  // Init color
   (function initHighlightColor() {
     if (!hlColor) return;
     const saved = localStorage.getItem(COLOR_STORE_KEY);
@@ -257,7 +275,6 @@
     });
   }
 
-  // Click-to-remove
   if (passageEl) {
     passageEl.addEventListener("click", (e) => {
       const mark = e.target.closest && e.target.closest("mark.hl");
@@ -267,7 +284,6 @@
     });
   }
 
-  // Select-to-highlight
   if (passageEl) {
     passageEl.addEventListener("mouseup", () => {
       if (!highlightOn) return;
@@ -278,7 +294,6 @@
 
       const range = sel.getRangeAt(0);
 
-      // Only allow highlighting inside passage
       if (!passageEl.contains(range.commonAncestorContainer)) {
         sel.removeAllRanges();
         return;
@@ -293,7 +308,6 @@
         saveHighlightsToStorage();
       } catch {
         sel.removeAllRanges();
-        // Selection across multiple nodes/paragraphs can throw; ignore for stability.
       }
     });
   }
@@ -304,7 +318,9 @@
     });
   }
 
-  // --- Collect answers (no token / no results shown) ---
+  // ----------------------------
+  // Collect answers + submit (no token, no results screen)
+  // ----------------------------
   function getRadio(name) {
     const el = document.querySelector(`input[name="${name}"]:checked`);
     return el ? el.value : "";
@@ -312,26 +328,19 @@
 
   function collectAnswers() {
     const answers = {};
-
-    // Text inputs
     [1,2,3,4,8,9,10,11,12,13].forEach(n => {
       answers[`q${n}`] = (document.getElementById(`q${n}`)?.value || "").trim();
     });
-
-    // Radio inputs
     answers["q5"] = getRadio("q5");
     answers["q6"] = getRadio("q6");
     answers["q7"] = getRadio("q7");
-
     return answers;
   }
 
   function validateAnswered(answers) {
     for (let i = 1; i <= 13; i++) {
-      const key = `q${i}`;
-      if (!answers[key] || answers[key].length === 0) {
-        return `Question ${i} is unanswered.`;
-      }
+      const k = `q${i}`;
+      if (!answers[k] || answers[k].length === 0) return `Question ${i} is unanswered.`;
     }
     return null;
   }
@@ -366,15 +375,15 @@
       return;
     }
 
-    // Save locally (so we can submit all skills together later if needed)
+    // Save locally (optional, but useful for later sections)
     localStorage.setItem("mock_reading_answers", JSON.stringify({
       test_id: "IELTS11_R1_P1",
       seconds_left: remaining,
-      duration_seconds: totalSeconds,
+      duration_seconds: TOTAL_SECONDS,
       answers
     }));
 
-    // For MVP, also submit immediately to backend (no score, no results shown)
+    // Submit to backend
     try {
       const payload = {
         submission_id: submissionId,
@@ -383,11 +392,11 @@
           reading: {
             test_id: "IELTS11_R1_P1",
             seconds_left: remaining,
-            duration_seconds: totalSeconds,
+            duration_seconds: TOTAL_SECONDS,
             answers
           },
-          listening: {},  // placeholder for later
-          writing: {}     // placeholder for later
+          listening: {},
+          writing: {}
         }
       };
 
@@ -408,7 +417,10 @@
       return;
     }
 
-    // No results screen. Go to thank-you (or next section later).
+    // Clear timer only AFTER successful submit
+    localStorage.removeItem(TIMER_KEY);
+
+    // No results screen
     window.location.href = "thank-you.html";
   });
 </script>
