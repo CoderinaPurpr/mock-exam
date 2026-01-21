@@ -39,40 +39,66 @@ export async function onRequest({ request, env }) {
       ).bind(name, whatsapp || null, consent, leadId).run();
     }
 
-    // ---------- Answers blobs ----------
-    const readingObj = data?.answers?.reading || {};
-    const listeningObj = data?.answers?.listening || {};
-    const writingObj = data?.answers?.writing || {};
+    // ---------- Load existing submission so we can PATCH/merge ----------
+    const existing = await env.DB.prepare(
+      `SELECT reading_answers_json, listening_answers_json, writing_answers_json, speaking_meta_json
+       FROM submissions WHERE id = ?`
+    ).bind(submissionId).first();
+
+    const incomingReading = data?.answers?.reading;
+    const incomingListening = data?.answers?.listening;
+    const incomingWriting = data?.answers?.writing;
+    const incomingSpeaking = data?.answers?.speaking;
+
+    // Only overwrite a section if the client actually sent it (and it isn't empty)
+    const readingObj = hasContent(incomingReading)
+      ? incomingReading
+      : safeParse(existing?.reading_answers_json, {});
+
+    const listeningObj = hasContent(incomingListening)
+      ? incomingListening
+      : safeParse(existing?.listening_answers_json, {});
+
+    const writingObj = hasContent(incomingWriting)
+      ? incomingWriting
+      : safeParse(existing?.writing_answers_json, {});
+
+    const speakingMetaObj = hasContent(incomingSpeaking)
+      ? incomingSpeaking
+      : safeParse(existing?.speaking_meta_json, { part1: null, part2: null, part3: null });
 
     const readingJson = JSON.stringify(readingObj);
     const listeningJson = JSON.stringify(listeningObj);
     const writingJson = JSON.stringify(writingObj);
+    const speakingMetaJson = JSON.stringify(speakingMetaObj);
 
-    // Keep existing speaking_meta if present, else set empty structure
-    const existingSub = await env.DB.prepare(
-      `SELECT speaking_meta_json FROM submissions WHERE id = ?`
-    ).bind(submissionId).first();
-
-    const speakingMetaJson =
-      existingSub?.speaking_meta_json ||
-      JSON.stringify({ part1: null, part2: null, part3: null });
-
-    // ---------- Server-side reading scoring ----------
-    // Expecting readingObj.answers = { q1: "...", q5: "TRUE", ... }
-    const readingAnswers = (readingObj && typeof readingObj === "object") ? (readingObj.answers || null) : null;
-
+    // ---------- Server-side reading scoring (13Q key) ----------
     let readingScore = null;
     let readingTotal = null;
     let readingIncorrectJson = null;
 
+    // Expecting readingObj.answers = { q1: "...", q5: "TRUE", ... }
+    const readingAnswers = readingObj?.answers;
     if (readingAnswers && typeof readingAnswers === "object") {
       const scored = scoreReading13(readingAnswers);
       readingScore = scored.score;
       readingTotal = scored.total;
       readingIncorrectJson = JSON.stringify(scored.incorrect);
+    } else {
+      // If we didn't receive reading this time, keep existing score/incorrect if present
+      // (No extra read needed; leaving null will not overwrite due to merge logic below.)
     }
 
-    // ---------- Upsert submission ----------
+    // ---------- Upsert submission (merge-safe) ----------
+    // IMPORTANT: We do not overwrite score fields unless we computed them now.
+    const existingScoreRow = await env.DB.prepare(
+      `SELECT reading_score, reading_total, reading_incorrect_json FROM submissions WHERE id = ?`
+    ).bind(submissionId).first();
+
+    const finalReadingScore = (readingScore !== null) ? readingScore : (existingScoreRow?.reading_score ?? null);
+    const finalReadingTotal = (readingTotal !== null) ? readingTotal : (existingScoreRow?.reading_total ?? null);
+    const finalIncorrectJson = (readingIncorrectJson !== null) ? readingIncorrectJson : (existingScoreRow?.reading_incorrect_json ?? null);
+
     await env.DB.prepare(
       `INSERT INTO submissions
         (id, lead_id, user_agent,
@@ -85,6 +111,7 @@ export async function onRequest({ request, env }) {
          reading_answers_json = excluded.reading_answers_json,
          listening_answers_json = excluded.listening_answers_json,
          writing_answers_json = excluded.writing_answers_json,
+         speaking_meta_json = excluded.speaking_meta_json,
          reading_score = excluded.reading_score,
          reading_total = excluded.reading_total,
          reading_incorrect_json = excluded.reading_incorrect_json
@@ -92,18 +119,57 @@ export async function onRequest({ request, env }) {
     ).bind(
       submissionId, leadId, ua,
       readingJson, listeningJson, writingJson, speakingMetaJson,
-      readingScore, readingTotal, readingIncorrectJson
+      finalReadingScore, finalReadingTotal, finalIncorrectJson
+    ).run();
+
+    // ---------- History / audit ----------
+    await env.DB.prepare(
+      `INSERT INTO submission_events (submission_id, event_type, payload_json)
+       VALUES (?, ?, ?)`
+    ).bind(
+      submissionId,
+      "section_submit",
+      JSON.stringify({
+        has_reading: !!incomingReading,
+        has_listening: !!incomingListening,
+        has_writing: !!incomingWriting,
+        has_speaking: !!incomingSpeaking
+      })
     ).run();
 
     return json({
       ok: true,
       submission_id: submissionId,
-      reading_score: readingScore,
-      reading_total: readingTotal
+      reading_score: finalReadingScore,
+      reading_total: finalReadingTotal
     });
   } catch (err) {
     return json({ ok: false, error: "Server error", detail: String(err) }, 500);
   }
+}
+
+// ------------------------------
+// Helpers
+// ------------------------------
+function hasContent(obj) {
+  return obj && typeof obj === "object" && Object.keys(obj).length > 0;
+}
+
+function safeParse(s, fallback) {
+  try {
+    if (!s) return fallback;
+    const v = JSON.parse(s);
+    return (v && typeof v === "object") ? v : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function json(obj, status = 200) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 // ------------------------------
@@ -141,7 +207,7 @@ function scoreReading13(a) {
 
     const ok = isWord
       ? normalizeWord(your) === normalizeWord(correct)
-      : your === correct; // keep strict for TRUE/FALSE/NOT GIVEN
+      : your === correct;
 
     if (ok) score++;
     else incorrect.push({ q: i, your, correct });
@@ -151,15 +217,5 @@ function scoreReading13(a) {
 }
 
 function normalizeWord(s) {
-  return (s || "")
-    .toString()
-    .trim()
-    .toLowerCase();
-}
-
-function json(obj, status = 200) {
-  return new Response(JSON.stringify(obj), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
+  return (s || "").toString().trim().toLowerCase();
 }
