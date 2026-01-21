@@ -83,12 +83,29 @@
       }
 
       const lead = { name, email, whatsapp, consent };
-      localStorage.setItem("mock_lead", JSON.stringify(lead));
+      //localStorage.setItem("mock_lead", JSON.stringify(lead));
 
       // Generate submission ID if not already present
-      if (!localStorage.getItem("mock_submission_id")) {
-        localStorage.setItem("mock_submission_id", "sub_" + crypto.randomUUID());
-      }
+// Always start a NEW mock attempt (shared-laptop safe)
+localStorage.setItem("mock_submission_id", "sub_" + crypto.randomUUID());
+
+// Overwrite lead for this attempt
+const lead = { name, email, whatsapp, consent };
+localStorage.setItem("mock_lead", JSON.stringify(lead));
+
+// Clear any previous attempt data (so students don't overwrite each other)
+localStorage.removeItem("mock_reading_answers");
+localStorage.removeItem("mock_listening_answers");
+localStorage.removeItem("mock_writing_answers");
+localStorage.removeItem("mock_speaking_meta");
+
+// Clear section timers so a previous student's timer doesn't carry over
+localStorage.removeItem("reading_start_ts_IELTS11_R1_P1"); // reading timer key you use now
+// (Add listening/writing timer keys here later when we create them)
+
+// Start test
+window.location.href = "reading.html";
+
 
       // Start test
       window.location.href = "reading.html";
