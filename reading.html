@@ -1,232 +1,109 @@
-<script>
-/* =========================================================
-   GUARD — must start from landing page
-   ========================================================= */
-const lead = JSON.parse(localStorage.getItem("mock_lead") || "null");
-const submissionId = localStorage.getItem("mock_submission_id");
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Free IELTS Mock Exam</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
 
-if (!lead || !lead.name || !lead.email || !submissionId) {
-  window.location.href = "index.html";
-}
+  <main class="container">
+    <h1>Free IELTS Mock Exam</h1>
 
-/* =========================================================
-   TIMER (persists across refresh)
-   ========================================================= */
-const TOTAL_SECONDS = 23 * 60;
-const TIMER_KEY = "reading_start_ts_IELTS11_R1_P1";
+    <p class="lead">
+      Take a full IELTS-style mock test covering <strong>Reading, Listening, Writing, and Speaking</strong>.
+    </p>
 
-let startTs = localStorage.getItem(TIMER_KEY);
-if (!startTs) {
-  startTs = Date.now();
-  localStorage.setItem(TIMER_KEY, String(startTs));
-} else {
-  startTs = parseInt(startTs, 10);
-}
+    <p class="muted">
+      Your answers will be reviewed by an examiner.
+      <strong>Results are not shown on-screen</strong> — we’ll contact you directly with feedback.
+    </p>
 
-function computeRemaining() {
-  const elapsed = Math.floor((Date.now() - startTs) / 1000);
-  return Math.max(0, TOTAL_SECONDS - elapsed);
-}
+    <div class="card">
+      <h2>Enter your details to receive your results</h2>
 
-let remaining = computeRemaining();
+      <label>
+        Full Name <span class="required">*</span><br />
+        <input id="leadName" type="text" placeholder="Your name" />
+      </label>
 
-const timeLeftEl = document.getElementById("timeLeft");
-const timerBox = document.getElementById("timerBox");
-const msg = document.getElementById("msg");
-const submitBtn = document.getElementById("submitBtn");
+      <br /><br />
 
-function renderTime() {
-  const m = Math.floor(remaining / 60).toString().padStart(2, "0");
-  const s = (remaining % 60).toString().padStart(2, "0");
-  timeLeftEl.textContent = `${m}:${s}`;
+      <label>
+        Email Address <span class="required">*</span><br />
+        <input id="leadEmail" type="email" placeholder="you@example.com" />
+      </label>
 
-  timerBox.classList.remove("warning", "danger");
-  if (remaining <= 5 * 60) timerBox.classList.add("danger");
-  else if (remaining <= 10 * 60) timerBox.classList.add("warning");
-}
+      <br /><br />
 
-renderTime();
+      <label>
+        WhatsApp (optional)<br />
+        <input id="leadWhatsApp" type="text" placeholder="+27…" />
+      </label>
 
-const tick = setInterval(() => {
-  remaining = computeRemaining();
-  renderTime();
+      <br /><br />
 
-  if (remaining <= 0) {
-    clearInterval(tick);
-    submitBtn.disabled = true;
-    msg.textContent = "Time is up. Please submit what you have.";
-  }
-}, 1000);
+      <label class="checkbox">
+        <input id="leadConsent" type="checkbox" />
+        I consent to be contacted with my IELTS mock test results.
+      </label>
 
-/* =========================================================
-   COPY / FIND / PRINT BLOCK (best-effort)
-   ========================================================= */
-function showHint(text) {
-  msg.textContent = text;
-  setTimeout(() => { msg.textContent = ""; }, 2500);
-}
+      <p class="error" id="formError" style="min-height: 1.2em;"></p>
 
-document.addEventListener("keydown", (e) => {
-  const key = (e.key || "").toLowerCase();
-  const isMac = navigator.platform.toUpperCase().includes("MAC");
-  const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey;
+      <button id="startBtn" class="btn" type="button">Start Mock Exam</button>
+    </div>
 
-  if (ctrlOrCmd && ["f", "c", "p"].includes(key)) {
-    e.preventDefault();
-    showHint("This action is disabled during the reading test.");
-  }
-});
+    <p class="muted">
+      ⏱ Estimated time: 60–90 minutes
+      <br />
+      🎧 Listening audio can only be played once
+    </p>
+  </main>
 
-const passageEl = document.getElementById("passage");
-if (passageEl) {
-  passageEl.addEventListener("contextmenu", e => {
-    e.preventDefault();
-    showHint("Copy is disabled during the reading test.");
-  });
-}
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const startBtn = document.getElementById("startBtn");
 
-/* =========================================================
-   HIGHLIGHTER (persistent)
-   ========================================================= */
-let highlightOn = false;
-const hlToggle = document.getElementById("hlToggle");
-const hlClear = document.getElementById("hlClear");
-const hlColor = document.getElementById("hlColor");
+      startBtn.addEventListener("click", () => {
+        const name = document.getElementById("leadName").value.trim();
+        const email = document.getElementById("leadEmail").value.trim();
+        const whatsapp = document.getElementById("leadWhatsApp").value.trim();
+        const consent = document.getElementById("leadConsent").checked;
+        const errorBox = document.getElementById("formError");
 
-const HIGHLIGHT_STORE_KEY = "reading_highlights_IELTS11_R1_P1";
-const COLOR_STORE_KEY = "reading_highlight_color_IELTS11_R1_P1";
+        errorBox.textContent = "";
 
-function saveHighlights() {
-  localStorage.setItem(HIGHLIGHT_STORE_KEY, passageEl.innerHTML);
-}
+        // Debug (remove later if you want)
+        // errorBox.textContent = "Click registered..."; 
 
-function restoreHighlights() {
-  const saved = localStorage.getItem(HIGHLIGHT_STORE_KEY);
-  if (saved) passageEl.innerHTML = saved;
-}
+        if (!name || !email) {
+          errorBox.textContent = "Please enter your name and email.";
+          return;
+        }
 
-function unwrapMark(mark) {
-  const parent = mark.parentNode;
-  while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
-  parent.removeChild(mark);
-}
+        if (!consent) {
+          errorBox.textContent = "Please give consent so we can contact you with your results.";
+          return;
+        }
 
-restoreHighlights();
+        const lead = { name, email, whatsapp, consent };
+        localStorage.setItem("mock_lead", JSON.stringify(lead));
 
-hlToggle.addEventListener("click", () => {
-  highlightOn = !highlightOn;
-  hlToggle.textContent = highlightOn ? "Highlight: ON" : "Highlight: OFF";
-});
+        // Always new attempt (shared laptop safe)
+        localStorage.setItem("mock_submission_id", "sub_" + crypto.randomUUID());
 
-hlClear.addEventListener("click", () => {
-  passageEl.querySelectorAll("mark.hl").forEach(unwrapMark);
-  localStorage.removeItem(HIGHLIGHT_STORE_KEY);
-});
+        // Clear previous attempt data
+        localStorage.removeItem("mock_reading_answers");
+        localStorage.removeItem("mock_listening_answers");
+        localStorage.removeItem("mock_writing_answers");
+        localStorage.removeItem("mock_speaking_meta");
+        localStorage.removeItem("reading_start_ts_IELTS11_R1_P1");
 
-hlColor.addEventListener("change", () => {
-  localStorage.setItem(COLOR_STORE_KEY, hlColor.value);
-  document.documentElement.style.setProperty("--hl-color", hlColor.value);
-});
-
-(function initColor() {
-  const saved = localStorage.getItem(COLOR_STORE_KEY);
-  if (saved) {
-    hlColor.value = saved;
-    document.documentElement.style.setProperty("--hl-color", saved);
-  }
-})();
-
-passageEl.addEventListener("mouseup", () => {
-  if (!highlightOn) return;
-  const sel = window.getSelection();
-  if (!sel || !sel.toString().trim()) return;
-
-  const range = sel.getRangeAt(0);
-  if (!passageEl.contains(range.commonAncestorContainer)) return;
-
-  const mark = document.createElement("mark");
-  mark.className = "hl";
-
-  try {
-    range.surroundContents(mark);
-    sel.removeAllRanges();
-    saveHighlights();
-  } catch {
-    sel.removeAllRanges();
-  }
-});
-
-/* =========================================================
-   ANSWERS + SUBMIT
-   ========================================================= */
-function getRadio(name) {
-  const el = document.querySelector(`input[name="${name}"]:checked`);
-  return el ? el.value : "";
-}
-
-function collectAnswers() {
-  const a = {};
-  [1,2,3,4,8,9,10,11,12,13].forEach(n => {
-    a[`q${n}`] = document.getElementById(`q${n}`).value.trim();
-  });
-  a.q5 = getRadio("q5");
-  a.q6 = getRadio("q6");
-  a.q7 = getRadio("q7");
-  return a;
-}
-
-function validateAnswers(a) {
-  for (let i = 1; i <= 13; i++) {
-    if (!a[`q${i}`]) return `Question ${i} is unanswered.`;
-  }
-  return null;
-}
-
-submitBtn.addEventListener("click", async () => {
-  msg.textContent = "";
-
-  if (remaining <= 0) {
-    msg.textContent = "Time is up. Please submit what you have.";
-    return;
-  }
-
-  const answers = collectAnswers();
-  const err = validateAnswers(answers);
-  if (err) {
-    msg.textContent = err;
-    return;
-  }
-
-  const payload = {
-    submission_id: submissionId,
-    lead,
-    answers: {
-      reading: {
-        test_id: "IELTS11_R1_P1",
-        seconds_left: remaining,
-        duration_seconds: TOTAL_SECONDS,
-        answers
-      }
-    }
-  };
-
-  try {
-    const res = await fetch("/api/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+        window.location.href = "reading.html";
+      });
     });
+  </script>
 
-    if (!res.ok) {
-      msg.textContent = "Submit failed. Please contact staff.";
-      return;
-    }
-  } catch (e) {
-    msg.textContent = "Network error. Please try again.";
-    return;
-  }
-
-  localStorage.removeItem(TIMER_KEY);
-  window.location.href = "thank-you.html";
-});
-</script>
+</body>
+</html>
