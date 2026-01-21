@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Writing</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Writing</h1>
+    <p class="muted">MVP page — we’ll wire the full prompts/questions next.</p>
+
+    <div class="card">
+      <h2>Task 1</h2>
+      <textarea id="t1" rows="8" style="width:100%"></textarea>
+    </div>
+
+    <div class="card">
+      <h2>Task 2</h2>
+      <textarea id="t2" rows="10" style="width:100%"></textarea>
+    </div>
+
+    <button class="btn" id="submitBtn" type="button">Submit (MVP)</button>
+    <p class="muted" id="msg"></p>
+  </main>
+
+  <script type="module">
+    import { submitMvp } from "./app.js";
+
+    document.getElementById("submitBtn").addEventListener("click", async () => {
+      const msg = document.getElementById("msg");
+      msg.textContent = "Submitting...";
+      try {
+        const out = await submitMvp();
+        msg.textContent = `Server responded: ${out.status} ${out.text}`;
+        if (out.status === 200) location.href = "thank-you.html";
+      } catch (e) {
+        msg.textContent = "Error: " + (e.message || e);
+      }
+    });
+  </script>
+</body>
+</html>

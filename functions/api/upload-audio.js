@@ -1,5 +1,9 @@
 // functions/api/upload-audio.js
-export async function onRequestPost({ request, env }) {
+export async function onRequest({ request, env }) {
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
+  }
+
   try {
     const ct = request.headers.get("Content-Type") || "";
     if (!ct.includes("multipart/form-data")) {
@@ -8,18 +12,16 @@ export async function onRequestPost({ request, env }) {
 
     const form = await request.formData();
     const submissionId = (form.get("submission_id") || "").toString().trim();
-    const part = (form.get("part") || "").toString().trim(); // part1|part2|part3
+    const part = (form.get("part") || "").toString().trim();
     const file = form.get("audio");
 
     if (!submissionId || !part) return json({ ok: false, error: "Missing submission_id or part." }, 400);
     if (!["part1", "part2", "part3"].includes(part)) return json({ ok: false, error: "Invalid part." }, 400);
     if (!(file instanceof File)) return json({ ok: false, error: "Missing audio file." }, 400);
 
-    // Check submission exists + load current meta
-    const row = await env.DB.prepare(
-      `SELECT speaking_meta_json FROM submissions WHERE id = ?`
-    ).bind(submissionId).first();
-
+    const row = await env.DB.prepare(`SELECT speaking_meta_json FROM submissions WHERE id = ?`)
+      .bind(submissionId)
+      .first();
     if (!row) return json({ ok: false, error: "Submission not found." }, 404);
 
     let meta = {};

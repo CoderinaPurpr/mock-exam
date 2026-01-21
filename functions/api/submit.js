@@ -1,5 +1,9 @@
 // functions/api/submit.js
-export async function onRequestPost({ request, env }) {
+export async function onRequest({ request, env }) {
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
+  }
+
   try {
     const data = await request.json();
 
@@ -20,7 +24,6 @@ export async function onRequestPost({ request, env }) {
     ).bind(name, email, whatsapp || null, consent).run();
 
     const leadId = leadRes.meta?.last_row_id;
-
     const ua = request.headers.get("User-Agent") || null;
 
     const reading = JSON.stringify(data?.answers?.reading || {});
