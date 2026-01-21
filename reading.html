@@ -117,11 +117,6 @@
 
       <hr>
 
-      <label>
-        Email (so you can match a submission later)<br>
-        <input type="email" id="email" placeholder="student@example.com" required>
-      </label>
-
       <button id="submitBtn" type="button">Submit Reading Test</button>
       <p id="msg" class="footer"></p>
     </div>
@@ -129,34 +124,9 @@
   </div>
 
 <script>
-  const WORKER_BASE = "https://submission-code-template.rvnvrn.workers.dev";
-
-  const token = sessionStorage.getItem("wc_token");
-  if (!token) window.location.href = "index.html";
-
   // --- 23 minute timer (UI enforcement) ---
   const totalSeconds = 23 * 60;
   let remaining = totalSeconds;
-
-  // Validate token on load (sets sessionStart server-side)
-  (async () => {
-    try {
-      const fd = new FormData();
-      fd.append("token", token);
-
-      const res = await fetch(`${WORKER_BASE}/validate`, { method: "POST", body: fd });
-      const data = await res.json();
-
-      if (!data.ok) {
-        alert(data.error || "Token invalid.");
-        sessionStorage.removeItem("wc_token");
-        window.location.href = "index.html";
-      }
-    } catch (e) {
-      alert("Network error validating token.");
-      window.location.href = "index.html";
-    }
-  })();
 
   const timeLeftEl = document.getElementById("timeLeft");
   const timerBox = document.getElementById("timerBox");
@@ -185,7 +155,7 @@
     if (remaining <= 0) {
       clearInterval(tick);
       submitBtn.disabled = true;
-      msg.textContent = "Time is up. Please request a new token.";
+      msg.textContent = "Time is up. Please continue to the next section or submit what you have.";
     }
   }, 1000);
 
@@ -334,128 +304,112 @@
     });
   }
 
-  // NOTE: Screenshots cannot be reliably blocked by websites in normal browsers.
-  // Best-effort discouragement would be watermarks/blur-on-tab-switch, but not true blocking.
-
-  // --- Answer key ---
-  const key = {
-    1: "oval",
-    2: "husk",
-    3: "seed",
-    4: "mace",
-    5: "FALSE",
-    6: "NOT GIVEN",
-    7: "TRUE",
-    8: "Arabs",
-    9: "plague",
-    10: "lime",
-    11: "Run",
-    12: "Mauritius",
-    13: "tsunami"
-  };
-
-  function norm(s) {
-    return (s || "").toString().trim().toLowerCase();
-  }
-
+  // --- Collect answers (no token / no results shown) ---
   function getRadio(name) {
     const el = document.querySelector(`input[name="${name}"]:checked`);
     return el ? el.value : "";
   }
 
-  function grade() {
+  function collectAnswers() {
     const answers = {};
-    const incorrect = [];
 
+    // Text inputs
     [1,2,3,4,8,9,10,11,12,13].forEach(n => {
-      answers[n] = document.getElementById(`q${n}`).value.trim();
+      answers[`q${n}`] = (document.getElementById(`q${n}`)?.value || "").trim();
     });
 
-    answers[5] = getRadio("q5");
-    answers[6] = getRadio("q6");
-    answers[7] = getRadio("q7");
+    // Radio inputs
+    answers["q5"] = getRadio("q5");
+    answers["q6"] = getRadio("q6");
+    answers["q7"] = getRadio("q7");
 
+    return answers;
+  }
+
+  function validateAnswered(answers) {
     for (let i = 1; i <= 13; i++) {
-      if (!answers[i]) return { ok: false, error: `Question ${i} is unanswered.` };
+      const key = `q${i}`;
+      if (!answers[key] || answers[key].length === 0) {
+        return `Question ${i} is unanswered.`;
+      }
     }
-
-    let score = 0;
-    for (let i = 1; i <= 13; i++) {
-      const correct = key[i];
-      const isWord = [1,2,3,4,8,9,10,11,12,13].includes(i);
-
-      const isCorrect = isWord
-        ? norm(answers[i]) === norm(correct)
-        : answers[i] === correct;
-
-      if (isCorrect) score++;
-      else incorrect.push({ q: i, your: answers[i], correct });
-    }
-
-    return { ok: true, score, total: 13, incorrect, answers };
+    return null;
   }
 
   submitBtn.addEventListener("click", async () => {
     msg.textContent = "";
 
     if (remaining <= 0) {
-      msg.textContent = "Time is up. Please request a new token.";
+      msg.textContent = "Time is up. Please submit what you have.";
       return;
     }
 
-    const email = document.getElementById("email").value.trim();
-    if (!email) {
-      msg.textContent = "Please enter your email.";
+    // Require lead from landing page
+    let lead = null;
+    try { lead = JSON.parse(localStorage.getItem("mock_lead") || "null"); } catch {}
+    if (!lead || !lead.name || !lead.email) {
+      msg.textContent = "Missing lead details. Please start from the home page.";
       return;
     }
 
-    const result = grade();
-    if (!result.ok) {
-      msg.textContent = result.error;
+    // Require submission id
+    let submissionId = localStorage.getItem("mock_submission_id");
+    if (!submissionId) {
+      submissionId = "sub_" + crypto.randomUUID();
+      localStorage.setItem("mock_submission_id", submissionId);
+    }
+
+    const answers = collectAnswers();
+    const err = validateAnswered(answers);
+    if (err) {
+      msg.textContent = err;
       return;
     }
 
-    let submissionId = null;
-
-    try {
-      const fd = new FormData();
-      fd.append("token", token);
-      fd.append("email", email);
-      fd.append("test_id", "IELTS11_R1_P1");
-      fd.append("score", String(result.score));
-      fd.append("total", String(result.total));
-      fd.append("answers_json", JSON.stringify(result.answers));
-      fd.append("incorrect_json", JSON.stringify(result.incorrect));
-      fd.append("seconds_left", String(remaining));
-      fd.append("duration_seconds", String(totalSeconds));
-
-      const res = await fetch(`${WORKER_BASE}/reading/submit`, { method: "POST", body: fd });
-      const data = await res.json();
-
-      if (!data.ok) {
-        msg.textContent = data.error || "Could not submit.";
-        return;
-      }
-
-      submissionId = data.submission_id;
-      sessionStorage.setItem("reading_submission_id", String(submissionId));
-    } catch (e) {
-      console.error(e);
-      msg.textContent = "Network error submitting test. Please try again.";
-      return;
-    }
-
-    sessionStorage.setItem("reading_result", JSON.stringify({
-      test_name: "IELTS Eleven - Reading Test 1 Passage 1",
-      email,
-      score: result.score,
-      total: result.total,
-      incorrect: result.incorrect,
-      submission_id: submissionId
+    // Save locally (so we can submit all skills together later if needed)
+    localStorage.setItem("mock_reading_answers", JSON.stringify({
+      test_id: "IELTS11_R1_P1",
+      seconds_left: remaining,
+      duration_seconds: totalSeconds,
+      answers
     }));
 
-    sessionStorage.removeItem("wc_token");
-    window.location.href = "reading_results.html";
+    // For MVP, also submit immediately to backend (no score, no results shown)
+    try {
+      const payload = {
+        submission_id: submissionId,
+        lead,
+        answers: {
+          reading: {
+            test_id: "IELTS11_R1_P1",
+            seconds_left: remaining,
+            duration_seconds: totalSeconds,
+            answers
+          },
+          listening: {},  // placeholder for later
+          writing: {}     // placeholder for later
+        }
+      };
+
+      const res = await fetch("/api/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const text = await res.text();
+      if (!res.ok) {
+        msg.textContent = "Submit failed: " + text;
+        return;
+      }
+    } catch (e) {
+      console.error(e);
+      msg.textContent = "Network error submitting. Please try again.";
+      return;
+    }
+
+    // No results screen. Go to thank-you (or next section later).
+    window.location.href = "thank-you.html";
   });
 </script>
 
