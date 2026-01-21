@@ -1,0 +1,48 @@
+// functions/api/submit.js
+export async function onRequestPost({ request, env }) {
+  try {
+    const data = await request.json();
+
+    const name = (data?.lead?.name || "").trim();
+    const email = (data?.lead?.email || "").trim();
+    const whatsapp = (data?.lead?.whatsapp || "").trim();
+    const consent = data?.lead?.consent ? 1 : 0;
+
+    if (!name || !email) return json({ ok: false, error: "Name and Email are required." }, 400);
+    if (!consent) return json({ ok: false, error: "Consent is required." }, 400);
+
+    const submissionId = (data?.submission_id || "").trim();
+    if (!submissionId) return json({ ok: false, error: "Missing submission_id." }, 400);
+
+    // Insert lead
+    const leadRes = await env.DB.prepare(
+      `INSERT INTO leads (name, email, whatsapp, consent) VALUES (?, ?, ?, ?)`
+    ).bind(name, email, whatsapp || null, consent).run();
+
+    const leadId = leadRes.meta?.last_row_id;
+
+    const ua = request.headers.get("User-Agent") || null;
+
+    const reading = JSON.stringify(data?.answers?.reading || {});
+    const listening = JSON.stringify(data?.answers?.listening || {});
+    const writing = JSON.stringify(data?.answers?.writing || {});
+    const speakingMeta = JSON.stringify({ part1: null, part2: null, part3: null });
+
+    await env.DB.prepare(
+      `INSERT INTO submissions
+        (id, lead_id, user_agent, reading_answers_json, listening_answers_json, writing_answers_json, speaking_meta_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).bind(submissionId, leadId, ua, reading, listening, writing, speakingMeta).run();
+
+    return json({ ok: true, submission_id: submissionId });
+  } catch (err) {
+    return json({ ok: false, error: "Server error", detail: String(err) }, 500);
+  }
+}
+
+function json(obj, status = 200) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
