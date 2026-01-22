@@ -3,23 +3,24 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>IELTS Mock Exam</title>
+  <title>Free IELTS Mock Exam</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
   <main class="container">
-    <h1>IELTS Mock Exam</h1>
+    <h1>Free IELTS Mock Exam (v3)</h1>
 
     <p class="lead">
       Take a full IELTS-style mock test covering <strong>Reading, Listening, Writing, and Speaking</strong>.
     </p>
 
     <p class="muted">
-      Your answers will be reviewed by an examiner.  
+      Your answers will be reviewed by an examiner.
       <strong>Results are not shown on-screen</strong> — we’ll contact you directly with feedback.
     </p>
 
+    <!-- IMPORTANT: no <form> tag (prevents default submits) -->
     <div class="card">
       <h2>Enter your details to receive your results</h2>
 
@@ -49,83 +50,67 @@
         I consent to be contacted with my IELTS mock test results.
       </label>
 
-      <p class="error" id="formError"></p>
+      <p class="error" id="formError" style="min-height: 1.2em;"></p>
 
-      <button id="startBtn" class="btn">Start Mock Exam</button>
+      <!-- type="button" prevents reload, onclick guarantees handler runs -->
+      <button id="startBtn" class="btn" type="button" onclick="startMockExam(event)">
+        Start Mock Exam
+      </button>
     </div>
 
     <p class="muted">
-      ⏱ Estimated time: 60–90 minutes  
+      ⏱ Estimated time: 60–90 minutes
       <br />
       🎧 Listening audio can only be played once
     </p>
   </main>
 
   <script>
-(function () {
-  // 1) Prove the script is running at all
-  console.log("[mock-exam] index.html script loaded");
+    // Expose globally for inline onclick
+    function startMockExam(e) {
+      // Extra safety: if this button ever ends up inside a <form>, prevent submit reload
+      if (e && typeof e.preventDefault === "function") e.preventDefault();
 
-  const errorBox = document.getElementById("formError");
-  function showError(msg) {
-    if (errorBox) errorBox.textContent = msg;
-    console.log("[mock-exam] " + msg);
-  }
+      console.log("[mock-exam] Start clicked");
 
-  const startBtn = document.getElementById("startBtn");
-  if (!startBtn) {
-    showError("Start button not found (startBtn). Check your index.html IDs.");
-    return;
-  }
+      const errorBox = document.getElementById("formError");
+      errorBox.textContent = "";
 
-  // 2) Prove we can click it
-  startBtn.addEventListener("click", () => {
-    showError(""); // clear
+      const name = document.getElementById("leadName").value.trim();
+      const email = document.getElementById("leadEmail").value.trim();
+      const whatsapp = document.getElementById("leadWhatsApp").value.trim();
+      const consent = document.getElementById("leadConsent").checked;
 
-    const nameEl = document.getElementById("leadName");
-    const emailEl = document.getElementById("leadEmail");
-    const whatsappEl = document.getElementById("leadWhatsApp");
-    const consentEl = document.getElementById("leadConsent");
+      if (!name || !email) {
+        errorBox.textContent = "Please enter your name and email.";
+        return;
+      }
 
-    if (!nameEl || !emailEl || !whatsappEl || !consentEl) {
-      showError("One or more form inputs are missing. Check element IDs in index.html.");
-      return;
+      if (!consent) {
+        errorBox.textContent = "Please give consent so we can contact you with your results.";
+        return;
+      }
+
+      const lead = { name, email, whatsapp, consent };
+      localStorage.setItem("mock_lead", JSON.stringify(lead));
+
+      // Always new attempt (shared laptop safe)
+      localStorage.setItem("mock_submission_id", "sub_" + crypto.randomUUID());
+
+      // Clear previous attempt data
+      localStorage.removeItem("mock_reading_answers");
+      localStorage.removeItem("mock_listening_answers");
+      localStorage.removeItem("mock_writing_answers");
+      localStorage.removeItem("mock_speaking_meta");
+      localStorage.removeItem("reading_start_ts_IELTS11_R1_P1");
+
+      // Navigate
+      window.location.href = "reading.html";
     }
 
-    const name = nameEl.value.trim();
-    const email = emailEl.value.trim();
-    const whatsapp = whatsappEl.value.trim();
-    const consent = consentEl.checked;
-
-    if (!name || !email) {
-      showError("Please enter your name and email.");
-      return;
-    }
-    if (!consent) {
-      showError("Please give consent so we can contact you with your results.");
-      return;
-    }
-
-    const lead = { name, email, whatsapp, consent };
-    localStorage.setItem("mock_lead", JSON.stringify(lead));
-
-    // Always new attempt (shared laptop safe)
-    localStorage.setItem("mock_submission_id", "sub_" + crypto.randomUUID());
-
-    // Clear previous attempt data
-    localStorage.removeItem("mock_reading_answers");
-    localStorage.removeItem("mock_listening_answers");
-    localStorage.removeItem("mock_writing_answers");
-    localStorage.removeItem("mock_speaking_meta");
-    localStorage.removeItem("reading_start_ts_IELTS11_R1_P1");
-
-    // 3) Prove navigation is attempted
-    console.log("[mock-exam] navigating to reading.html");
-    window.location.assign("reading.html");
-  });
-})();
-</script>
-
+    // Prove script loaded
+    console.log("[mock-exam] index script loaded");
+  </script>
 
 </body>
 </html>
