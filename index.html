@@ -62,55 +62,70 @@
   </main>
 
   <script>
-    // Save lead details and start test
-    document.getElementById("startBtn").addEventListener("click", () => {
-      const name = document.getElementById("leadName").value.trim();
-      const email = document.getElementById("leadEmail").value.trim();
-      const whatsapp = document.getElementById("leadWhatsApp").value.trim();
-      const consent = document.getElementById("leadConsent").checked;
-      const errorBox = document.getElementById("formError");
+(function () {
+  // 1) Prove the script is running at all
+  console.log("[mock-exam] index.html script loaded");
 
-      errorBox.textContent = "";
+  const errorBox = document.getElementById("formError");
+  function showError(msg) {
+    if (errorBox) errorBox.textContent = msg;
+    console.log("[mock-exam] " + msg);
+  }
 
-      if (!name || !email) {
-        errorBox.textContent = "Please enter your name and email.";
-        return;
-      }
+  const startBtn = document.getElementById("startBtn");
+  if (!startBtn) {
+    showError("Start button not found (startBtn). Check your index.html IDs.");
+    return;
+  }
 
-      if (!consent) {
-        errorBox.textContent = "Please give consent so we can contact you with your results.";
-        return;
-      }
+  // 2) Prove we can click it
+  startBtn.addEventListener("click", () => {
+    showError(""); // clear
 
-      const lead = { name, email, whatsapp, consent };
-      //localStorage.setItem("mock_lead", JSON.stringify(lead));
+    const nameEl = document.getElementById("leadName");
+    const emailEl = document.getElementById("leadEmail");
+    const whatsappEl = document.getElementById("leadWhatsApp");
+    const consentEl = document.getElementById("leadConsent");
 
-      // Generate submission ID if not already present
-// Always start a NEW mock attempt (shared-laptop safe)
-localStorage.setItem("mock_submission_id", "sub_" + crypto.randomUUID());
+    if (!nameEl || !emailEl || !whatsappEl || !consentEl) {
+      showError("One or more form inputs are missing. Check element IDs in index.html.");
+      return;
+    }
 
-// Overwrite lead for this attempt
-const lead = { name, email, whatsapp, consent };
-localStorage.setItem("mock_lead", JSON.stringify(lead));
+    const name = nameEl.value.trim();
+    const email = emailEl.value.trim();
+    const whatsapp = whatsappEl.value.trim();
+    const consent = consentEl.checked;
 
-// Clear any previous attempt data (so students don't overwrite each other)
-localStorage.removeItem("mock_reading_answers");
-localStorage.removeItem("mock_listening_answers");
-localStorage.removeItem("mock_writing_answers");
-localStorage.removeItem("mock_speaking_meta");
+    if (!name || !email) {
+      showError("Please enter your name and email.");
+      return;
+    }
+    if (!consent) {
+      showError("Please give consent so we can contact you with your results.");
+      return;
+    }
 
-// Clear section timers so a previous student's timer doesn't carry over
-localStorage.removeItem("reading_start_ts_IELTS11_R1_P1"); // reading timer key you use now
-// (Add listening/writing timer keys here later when we create them)
+    const lead = { name, email, whatsapp, consent };
+    localStorage.setItem("mock_lead", JSON.stringify(lead));
 
-// Start test
-window.location.href = "reading.html";
+    // Always new attempt (shared laptop safe)
+    localStorage.setItem("mock_submission_id", "sub_" + crypto.randomUUID());
 
+    // Clear previous attempt data
+    localStorage.removeItem("mock_reading_answers");
+    localStorage.removeItem("mock_listening_answers");
+    localStorage.removeItem("mock_writing_answers");
+    localStorage.removeItem("mock_speaking_meta");
+    localStorage.removeItem("reading_start_ts_IELTS11_R1_P1");
 
-      // Start test
-      window.location.href = "reading.html";
-    });
-  </script>
+    // 3) Prove navigation is attempted
+    console.log("[mock-exam] navigating to reading.html");
+    window.location.assign("reading.html");
+  });
+})();
+</script>
+
 
 </body>
 </html>
