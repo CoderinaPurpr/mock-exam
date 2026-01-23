@@ -124,6 +124,15 @@
   </div>
 
 <script>
+  // Guard: must start from landing page
+  const lead = JSON.parse(localStorage.getItem("mock_lead") || "null");
+  const submissionId = localStorage.getItem("mock_submission_id");
+
+  if (!lead || !lead.name || !lead.email || !submissionId) {
+    window.location.assign("/index.html");
+    return;
+  }
+
   // ----------------------------
   // Timer (persists across refresh)
   // ----------------------------
@@ -353,21 +362,6 @@
       return;
     }
 
-    // Require lead from landing page
-    let lead = null;
-    try { lead = JSON.parse(localStorage.getItem("mock_lead") || "null"); } catch {}
-    if (!lead || !lead.name || !lead.email) {
-      msg.textContent = "Missing lead details. Please start from the home page.";
-      return;
-    }
-
-    // Require submission id
-    let submissionId = localStorage.getItem("mock_submission_id");
-    if (!submissionId) {
-      submissionId = "sub_" + crypto.randomUUID();
-      localStorage.setItem("mock_submission_id", submissionId);
-    }
-
     const answers = collectAnswers();
     const err = validateAnswered(answers);
     if (err) {
@@ -383,7 +377,7 @@
       answers
     }));
 
-    // Submit to backend
+    // Submit to backend (reading only; do NOT send empty listening/writing objects)
     try {
       const payload = {
         submission_id: submissionId,
@@ -394,9 +388,7 @@
             seconds_left: remaining,
             duration_seconds: TOTAL_SECONDS,
             answers
-          },
-          listening: {},
-          writing: {}
+          }
         }
       };
 
@@ -421,7 +413,7 @@
     localStorage.removeItem(TIMER_KEY);
 
     // No results screen
-    window.location.href = "thank-you.html";
+    window.location.assign("/thank-you.html");
   });
 </script>
 
