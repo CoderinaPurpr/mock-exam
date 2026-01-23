@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Free IELTS Mock Exam</title>
+  <title>IELTS Mock Exam</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
   <main class="container">
-    <h1>Free IELTS Mock Exam (v3)</h1>
+    <h1>IELTS Mock Exam</h1>
 
     <p class="lead">
       Take a full IELTS-style mock test covering <strong>Reading, Listening, Writing, and Speaking</strong>.
@@ -20,7 +20,6 @@
       <strong>Results are not shown on-screen</strong> — we’ll contact you directly with feedback.
     </p>
 
-    <!-- IMPORTANT: no <form> tag (prevents default submits) -->
     <div class="card">
       <h2>Enter your details to receive your results</h2>
 
@@ -40,7 +39,7 @@
 
       <label>
         WhatsApp (optional)<br />
-        <input id="leadWhatsApp" type="text" placeholder="+27…" />
+        <input id="leadWhatsApp" type="text" placeholder="+77…" />
       </label>
 
       <br /><br />
@@ -52,10 +51,7 @@
 
       <p class="error" id="formError" style="min-height: 1.2em;"></p>
 
-      <!-- type="button" prevents reload, onclick guarantees handler runs -->
-      <button id="startBtn" class="btn" type="button" onclick="startMockExam(event)">
-        Start Mock Exam
-      </button>
+      <button id="startBtn" class="btn" type="button">Start Mock Exam</button>
     </div>
 
     <p class="muted">
@@ -66,50 +62,54 @@
   </main>
 
   <script>
-    // Expose globally for inline onclick
-    function startMockExam(e) {
-      // Extra safety: if this button ever ends up inside a <form>, prevent submit reload
-      if (e && typeof e.preventDefault === "function") e.preventDefault();
-
-      console.log("[mock-exam] Start clicked");
-
+    // Landing page logic
+    document.addEventListener("DOMContentLoaded", () => {
+      const startBtn = document.getElementById("startBtn");
       const errorBox = document.getElementById("formError");
-      errorBox.textContent = "";
 
-      const name = document.getElementById("leadName").value.trim();
-      const email = document.getElementById("leadEmail").value.trim();
-      const whatsapp = document.getElementById("leadWhatsApp").value.trim();
-      const consent = document.getElementById("leadConsent").checked;
+      startBtn.addEventListener("click", (e) => {
+        e.preventDefault(); // safety: don't let anything submit/reload
 
-      if (!name || !email) {
-        errorBox.textContent = "Please enter your name and email.";
-        return;
-      }
+        const name = document.getElementById("leadName").value.trim();
+        const email = document.getElementById("leadEmail").value.trim();
+        const whatsapp = document.getElementById("leadWhatsApp").value.trim();
+        const consent = document.getElementById("leadConsent").checked;
 
-      if (!consent) {
-        errorBox.textContent = "Please give consent so we can contact you with your results.";
-        return;
-      }
+        errorBox.textContent = "";
 
-      const lead = { name, email, whatsapp, consent };
-      localStorage.setItem("mock_lead", JSON.stringify(lead));
+        if (!name || !email) {
+          errorBox.textContent = "Please enter your name and email.";
+          return;
+        }
 
-      // Always new attempt (shared laptop safe)
-      localStorage.setItem("mock_submission_id", "sub_" + crypto.randomUUID());
+        if (!consent) {
+          errorBox.textContent = "Please give consent so we can contact you with your results.";
+          return;
+        }
 
-      // Clear previous attempt data
-      localStorage.removeItem("mock_reading_answers");
-      localStorage.removeItem("mock_listening_answers");
-      localStorage.removeItem("mock_writing_answers");
-      localStorage.removeItem("mock_speaking_meta");
-      localStorage.removeItem("reading_start_ts_IELTS11_R1_P1");
+        // Save lead details
+        const lead = { name, email, whatsapp, consent };
+        localStorage.setItem("mock_lead", JSON.stringify(lead));
 
-      // Navigate
-      window.location.href = "/reading.html";
-    }
+        // Always create a NEW attempt id (shared laptop safe)
+        localStorage.setItem("mock_submission_id", "sub_" + crypto.randomUUID());
 
-    // Prove script loaded
-    console.log("[mock-exam] index script loaded");
+        // Clear previous attempt section data
+        localStorage.removeItem("mock_reading_answers");
+        localStorage.removeItem("mock_listening_answers");
+        localStorage.removeItem("mock_writing_answers");
+        localStorage.removeItem("mock_speaking_meta");
+        localStorage.removeItem("reading_start_ts_IELTS11_R1_P1");
+
+        // IMPORTANT:
+        // Use absolute path so routing is consistent on Cloudflare Pages.
+        // Add a cache-buster to avoid the browser "remembering" a bad redirect chain.
+        const target = "/reading.html?v=" + Date.now();
+
+        errorBox.textContent = "Starting mock exam…";
+        window.location.assign(target);
+      });
+    });
   </script>
 
 </body>
