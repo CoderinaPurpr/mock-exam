@@ -3,107 +3,186 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Free IELTS Mock Exam</title>
+  <title>IELTS Mock Exam – Reading</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <main class="container">
-    <h1>Free IELTS Mock Exam</h1>
+  <!-- Timer bar -->
+  <div id="timerBox" class="reading-timer">
+    📘 Reading Test — Time remaining: <span id="timeLeft">23:00</span>
+  </div>
 
-    <p class="lead">
-      Take a full IELTS-style mock test covering <strong>Reading, Listening, Writing, and Speaking</strong>.
-    </p>
+  <div class="reading-layout">
 
-    <p class="muted">
-      Your answers will be reviewed by an examiner.
-      <strong>Results are not shown on-screen</strong> — we’ll contact you directly with feedback.
-    </p>
+    <!-- LEFT: Passage -->
+    <div class="reading-panel reading-passage">
+      <h2>Reading Passage: Nutmeg – a valuable spice</h2>
 
-    <div class="card">
-      <h2>Enter your details to receive your results</h2>
-
-      <label>
-        Full Name <span class="required">*</span><br />
-        <input id="leadName" type="text" placeholder="Your name" />
-      </label>
-
-      <br /><br />
-
-      <label>
-        Email Address <span class="required">*</span><br />
-        <input id="leadEmail" type="email" placeholder="you@example.com" />
-      </label>
-
-      <br /><br />
-
-      <label>
-        WhatsApp (optional)<br />
-        <input id="leadWhatsApp" type="text" placeholder="+27…" />
-      </label>
-
-      <br /><br />
-
-      <label class="checkbox">
-        <input id="leadConsent" type="checkbox" />
-        I consent to be contacted with my IELTS mock test results.
-      </label>
-
-      <p class="error" id="formError" style="min-height: 1.2em;"></p>
-
-      <button id="startBtn" class="btn" type="button">Start Mock Exam</button>
+      <div id="passage" class="passage">
+        <p>The nutmeg tree, Myristica fragrans, is a large evergreen tree native to Southeast Asia...</p>
+        <p>Nutmeg was a highly prized and costly ingredient in European cuisine in the Middle Ages...</p>
+        <p>Always in danger of competition from neighbouring Spain...</p>
+        <p>In 1602, Dutch merchants founded the VOC...</p>
+        <p>The Banda Islands were ruled by local sultans...</p>
+        <p>Then, in 1770, a Frenchman named Pierre Poivre...</p>
+        <p>Today, nutmeg is grown in Indonesia, the Caribbean...</p>
+      </div>
     </div>
 
-    <p class="muted">
-      ⏱ Estimated time: 60–90 minutes
-      <br />
-      🎧 Listening audio can only be played once
-    </p>
-  </main>
+    <!-- RIGHT: Questions -->
+    <div class="reading-panel reading-questions">
+      <h2>Questions (1–13)</h2>
 
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const startBtn = document.getElementById("startBtn");
+      <div class="q"><label>1) Leaves are <input id="q1"></label></div>
+      <div class="q"><label>2) The <input id="q2"> surrounds the fruit</label></div>
+      <div class="q"><label>3) The <input id="q3"> produces nutmeg</label></div>
+      <div class="q"><label>4) Aril produces <input id="q4"></label></div>
 
-      startBtn.addEventListener("click", () => {
-        const name = document.getElementById("leadName").value.trim();
-        const email = document.getElementById("leadEmail").value.trim();
-        const whatsapp = document.getElementById("leadWhatsApp").value.trim();
-        const consent = document.getElementById("leadConsent").checked;
-        const errorBox = document.getElementById("formError");
+      <hr>
 
-        errorBox.textContent = "";
+      <div class="q">
+        <p>5) Europeans knew where nutmeg was grown.</p>
+        <label><input type="radio" name="q5" value="TRUE"> TRUE</label>
+        <label><input type="radio" name="q5" value="FALSE"> FALSE</label>
+        <label><input type="radio" name="q5" value="NOT GIVEN"> NOT GIVEN</label>
+      </div>
 
-        // Debug (remove later if you want)
-        // errorBox.textContent = "Click registered..."; 
+      <div class="q">
+        <p>6) The VOC was the first major trading company.</p>
+        <label><input type="radio" name="q6" value="TRUE"> TRUE</label>
+        <label><input type="radio" name="q6" value="FALSE"> FALSE</label>
+        <label><input type="radio" name="q6" value="NOT GIVEN"> NOT GIVEN</label>
+      </div>
 
-        if (!name || !email) {
-          errorBox.textContent = "Please enter your name and email.";
-          return;
-        }
+      <div class="q">
+        <p>7) Dutch controlled all nutmeg islands.</p>
+        <label><input type="radio" name="q7" value="TRUE"> TRUE</label>
+        <label><input type="radio" name="q7" value="FALSE"> FALSE</label>
+        <label><input type="radio" name="q7" value="NOT GIVEN"> NOT GIVEN</label>
+      </div>
 
-        if (!consent) {
-          errorBox.textContent = "Please give consent so we can contact you with your results.";
-          return;
-        }
+      <hr>
 
-        const lead = { name, email, whatsapp, consent };
-        localStorage.setItem("mock_lead", JSON.stringify(lead));
+      <div class="q"><label>8) Nutmeg was brought by the <input id="q8"></label></div>
+      <div class="q"><label>9) Disease was the <input id="q9"></label></div>
+      <div class="q"><label>10) Nutmeg covered with <input id="q10"></label></div>
+      <div class="q"><label>11) Island of <input id="q11"></label></div>
+      <div class="q"><label>12) Smuggled to <input id="q12"></label></div>
+      <div class="q"><label>13) Destroyed by a <input id="q13"></label></div>
 
-        // Always new attempt (shared laptop safe)
-        localStorage.setItem("mock_submission_id", "sub_" + crypto.randomUUID());
+      <button id="submitBtn" type="button">Submit Reading</button>
+      <p id="msg" class="footer"></p>
+    </div>
 
-        // Clear previous attempt data
-        localStorage.removeItem("mock_reading_answers");
-        localStorage.removeItem("mock_listening_answers");
-        localStorage.removeItem("mock_writing_answers");
-        localStorage.removeItem("mock_speaking_meta");
-        localStorage.removeItem("reading_start_ts_IELTS11_R1_P1");
+  </div>
 
-        window.location.href = "reading.html";
+<script>
+  /* =============================
+     GUARD — MUST START FROM INDEX
+     ============================= */
+  const lead = JSON.parse(localStorage.getItem("mock_lead") || "null");
+  const submissionId = localStorage.getItem("mock_submission_id");
+
+  if (!lead || !lead.name || !lead.email || !submissionId) {
+    window.location.assign("/index.html");
+    return;
+  }
+
+  /* =============================
+     TIMER (23 minutes, persistent)
+     ============================= */
+  const TOTAL_SECONDS = 23 * 60;
+  const TIMER_KEY = "reading_start_ts_IELTS11_R1_P1";
+
+  let startTs = localStorage.getItem(TIMER_KEY);
+  if (!startTs) {
+    startTs = Date.now();
+    localStorage.setItem(TIMER_KEY, startTs);
+  } else {
+    startTs = parseInt(startTs, 10);
+  }
+
+  function remainingSeconds() {
+    const elapsed = Math.floor((Date.now() - startTs) / 1000);
+    return Math.max(0, TOTAL_SECONDS - elapsed);
+  }
+
+  let remaining = remainingSeconds();
+
+  const timeLeftEl = document.getElementById("timeLeft");
+  const submitBtn = document.getElementById("submitBtn");
+  const msg = document.getElementById("msg");
+
+  function renderTime() {
+    const m = Math.floor(remaining / 60).toString().padStart(2, "0");
+    const s = (remaining % 60).toString().padStart(2, "0");
+    timeLeftEl.textContent = `${m}:${s}`;
+  }
+
+  renderTime();
+
+  const tick = setInterval(() => {
+    remaining = remainingSeconds();
+    renderTime();
+    if (remaining <= 0) {
+      clearInterval(tick);
+      submitBtn.disabled = true;
+      msg.textContent = "Time is up. Please submit.";
+    }
+  }, 1000);
+
+  /* =============================
+     SUBMIT
+     ============================= */
+  function getRadio(name) {
+    const el = document.querySelector(`input[name="${name}"]:checked`);
+    return el ? el.value : "";
+  }
+
+  submitBtn.addEventListener("click", async () => {
+    const answers = {};
+    for (let i = 1; i <= 13; i++) {
+      answers["q" + i] = i <= 4 || i >= 8
+        ? document.getElementById("q" + i).value.trim()
+        : getRadio("q" + i);
+      if (!answers["q" + i]) {
+        msg.textContent = `Question ${i} is unanswered.`;
+        return;
+      }
+    }
+
+    try {
+      const res = await fetch("/api/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          submission_id: submissionId,
+          lead,
+          answers: {
+            reading: {
+              test_id: "IELTS11_R1_P1",
+              seconds_left: remaining,
+              duration_seconds: TOTAL_SECONDS,
+              answers
+            }
+          }
+        })
       });
-    });
-  </script>
+
+      if (!res.ok) {
+        msg.textContent = "Submit failed.";
+        return;
+      }
+    } catch {
+      msg.textContent = "Network error.";
+      return;
+    }
+
+    localStorage.removeItem(TIMER_KEY);
+    window.location.assign("/thank-you.html");
+  });
+</script>
 
 </body>
 </html>
