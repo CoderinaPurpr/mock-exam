@@ -6,7 +6,9 @@
   <title>IELTS Mock Exam — Listening</title>
   <link rel="stylesheet" href="style.css" />
   <style>
-    /* Tiny helpers (safe, won’t fight your style.css) */
+    /* ============================================================
+       PAGE HELPERS (safe, won’t fight your style.css)
+       ============================================================ */
     .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
     .spacer { height: 12px; }
     .hidden { display:none !important; }
@@ -22,6 +24,20 @@
     .small { font-size: .9em; opacity: .85; }
     .progressWrap { width: 100%; max-width: 520px; }
     .progress { width: 100%; }
+
+    /* ============================================================
+       SECTION 1 — CRIME REPORT FORM (matches screenshot order)
+       ============================================================ */
+    .crime-form{border:1px solid #ccc;border-radius:8px;overflow:hidden;margin-top:12px}
+    .crime-form__title{padding:12px 14px;text-align:center;font-weight:700;border-bottom:1px solid #ccc}
+    .crime-form__section{padding:10px 14px;font-weight:700;background:#f7f7f7;border-top:1px solid #ccc;border-bottom:1px solid #ccc}
+    .crime-form__row{display:grid;grid-template-columns:240px 1fr;gap:12px;padding:10px 14px;border-bottom:1px solid #eee}
+    .crime-form__label{color:#222}
+    .crime-form__value{color:#111}
+    .crime-form__example{background:#fcfcfc}
+    .crime-form__underline{border-bottom:1px dotted #111;padding:0 6px}
+    .crime-form__input{max-width:220px;padding:6px 8px}
+    @media (max-width: 720px){ .crime-form__row{grid-template-columns:1fr} }
   </style>
 </head>
 <body>
@@ -36,7 +52,9 @@
 
     <div id="topMsg" class="error" style="min-height:1.2em;"></div>
 
-    <!-- SECTION NAV / STATUS -->
+    <!-- ============================================================
+         SECTION NAV / STATUS
+         ============================================================ -->
     <div class="card">
       <div class="row">
         <div><strong>Test:</strong> IELTS Listening — Test 1</div>
@@ -73,7 +91,9 @@
       </div>
     </div>
 
-    <!-- QUESTIONS -->
+    <!-- ============================================================
+         QUESTIONS
+         ============================================================ -->
     <div class="card" id="questionsCard">
       <h2 id="sectionTitle">Section</h2>
       <div id="questions"></div>
@@ -100,8 +120,6 @@
     const TEST_ID = "IELTS_LISTENING_T1";
     const REVIEW_SECONDS = 2 * 60;
 
-    // TODO: Put your MP3s here (create these paths/files in your repo)
-    // Example: /assets/listening/section1.mp3 etc.
     const SECTIONS = [
       { idx: 1, title: "SECTION 1 (Questions 1–10)",  audioSrc: "/assets/listening/section1.mp3", qFrom: 1,  qTo: 10 },
       { idx: 2, title: "SECTION 2 (Questions 11–20)", audioSrc: "/assets/listening/section2.mp3", qFrom: 11, qTo: 20 },
@@ -146,11 +164,8 @@
       if (!s || typeof s !== "object") {
         s = {
           currentSection: 1,
-          // sectionAudio[sectionIdx] = { started, ended, lastTime, duration }
           sectionAudio: {},
-          // reviewEndTsBySection[sectionIdx] = timestamp ms when review ends
           reviewEndTsBySection: {},
-          // lockedSections[sectionIdx] = true when review timer ended (section finalized)
           lockedSections: {}
         };
         saveState(s);
@@ -179,61 +194,161 @@
     function nowMs() { return Date.now(); }
 
     // ============================================================
-    // Question rendering (exactly your 40 questions)
+    // Question rendering (ONLY change: SECTION 1 layout + order)
     // ============================================================
     function renderSectionQuestions(sectionIdx) {
       questionsEl.innerHTML = "";
       qMsg.textContent = "";
 
+      // =========================
+      // SECTION 1 (Questions 1–10) — MATCH SCREENSHOT ORDER
+      // =========================
       if (sectionIdx === 1) {
         sectionTitle.textContent = "SECTION 1 — Questions 1–10";
         questionsEl.innerHTML = `
-          <p><strong>Questions 1–10</strong><br>
-            Complete the form below. Write <strong>ONE WORD AND/OR A NUMBER</strong> for each answer.
+          <p><strong>SECTION 1 Questions 1–10</strong><br>
+            Complete the form below.<br>
+            Write <strong>ONE WORD AND/OR A NUMBER</strong> for each answer.
           </p>
 
-          <div class="notice">
-            <strong>CRIME REPORT FORM</strong><br>
-            Type of crime: theft<br><br>
-            <strong>Personal information</strong><br>
-            Name (example): Louise Taylor<br>
-            Date of birth: 14 December 1977<br>
-            Occupation: interior designer<br>
-            Length of stay: two months
+          <div class="crime-form">
+            <div class="crime-form__title">CRIME REPORT FORM</div>
+
+            <div class="crime-form__row">
+              <div class="crime-form__label"><strong>Type of crime:</strong></div>
+              <div class="crime-form__value">theft</div>
+            </div>
+
+            <div class="crime-form__section">Personal information</div>
+
+            <!-- Example (visible, not an input) -->
+            <div class="crime-form__row crime-form__example">
+              <div class="crime-form__label">Example</div>
+              <div class="crime-form__value"></div>
+            </div>
+            <div class="crime-form__row crime-form__example">
+              <div class="crime-form__label">Name</div>
+              <div class="crime-form__value">Louise <span class="crime-form__underline">Taylor</span></div>
+            </div>
+
+            <div class="crime-form__row">
+              <div class="crime-form__label">Nationality</div>
+              <div class="crime-form__value">
+                <strong>1</strong>&nbsp;
+                <input id="q1" type="text" class="crime-form__input" placeholder="ONE WORD/NUMBER" />
+              </div>
+            </div>
+
+            <div class="crime-form__row">
+              <div class="crime-form__label">Date of birth</div>
+              <div class="crime-form__value">14 December 1977</div>
+            </div>
+
+            <div class="crime-form__row">
+              <div class="crime-form__label">Occupation</div>
+              <div class="crime-form__value">interior designer</div>
+            </div>
+
+            <div class="crime-form__row">
+              <div class="crime-form__label">Reason for visit</div>
+              <div class="crime-form__value">
+                business (to buy antique <strong>2</strong>&nbsp;
+                <input id="q2" type="text" class="crime-form__input" placeholder="ONE WORD/NUMBER" />
+                )
+              </div>
+            </div>
+
+            <div class="crime-form__row">
+              <div class="crime-form__label">Length of stay</div>
+              <div class="crime-form__value">two months</div>
+            </div>
+
+            <div class="crime-form__row">
+              <div class="crime-form__label">Current address</div>
+              <div class="crime-form__value">
+                <strong>3</strong>&nbsp;
+                <input id="q3" type="text" class="crime-form__input" placeholder="ONE WORD/NUMBER" />
+                &nbsp;Apartments (No 15)
+              </div>
+            </div>
+
+            <div class="crime-form__section">Details of theft</div>
+
+            <div class="crime-form__row">
+              <div class="crime-form__label">Items stolen</div>
+              <div class="crime-form__value">
+                a wallet containing approximately <strong>4</strong>&nbsp;£&nbsp;
+                <input id="q4" type="text" class="crime-form__input" placeholder="NUMBER" />
+              </div>
+            </div>
+
+            <div class="crime-form__row">
+              <div class="crime-form__label"></div>
+              <div class="crime-form__value">
+                a <strong>5</strong>&nbsp;
+                <input id="q5" type="text" class="crime-form__input" placeholder="ONE WORD" />
+              </div>
+            </div>
+
+            <div class="crime-form__row">
+              <div class="crime-form__label">Date of theft</div>
+              <div class="crime-form__value">
+                <strong>6</strong>&nbsp;
+                <input id="q6" type="text" class="crime-form__input" placeholder="ONE WORD/NUMBER" />
+              </div>
+            </div>
+
+            <div class="crime-form__section">Possible time and place of theft</div>
+
+            <div class="crime-form__row">
+              <div class="crime-form__label">Location</div>
+              <div class="crime-form__value">
+                outside the <strong>7</strong>&nbsp;
+                <input id="q7" type="text" class="crime-form__input" placeholder="ONE WORD" />
+                &nbsp;at about 4 pm
+              </div>
+            </div>
+
+            <div class="crime-form__section">Details of suspect</div>
+
+            <div class="crime-form__row">
+              <div class="crime-form__label"></div>
+              <div class="crime-form__value">
+                some boys asked for the <strong>8</strong>&nbsp;
+                <input id="q8" type="text" class="crime-form__input" placeholder="ONE WORD" />
+                &nbsp;then ran off
+              </div>
+            </div>
+
+            <div class="crime-form__row">
+              <div class="crime-form__label"></div>
+              <div class="crime-form__value">
+                one had a T-shirt with a picture of a tiger
+              </div>
+            </div>
+
+            <div class="crime-form__row">
+              <div class="crime-form__label"></div>
+              <div class="crime-form__value">
+                he was about 12, slim build with <strong>9</strong>. hair
+                <input id="q9" type="text" class="crime-form__input" placeholder="ONE WORD" />
+              </div>
+            </div>
+
+            <div class="crime-form__row">
+              <div class="crime-form__label"><strong>Crime reference number allocated</strong></div>
+              <div class="crime-form__value">
+                <strong>10</strong>&nbsp;
+                <input id="q10" type="text" class="crime-form__input" placeholder="NUMBER" />
+              </div>
+            </div>
           </div>
-
-          <div class="q"><label><strong>1</strong> Nationality:
-            <input type="text" id="q1" placeholder="ONE WORD/NUMBER"></label></div>
-
-          <div class="q"><label><strong>2</strong> Reason for visit: business (to buy antique …):
-            <input type="text" id="q2" placeholder="ONE WORD/NUMBER"></label></div>
-
-          <div class="q"><label><strong>3</strong> Current address:
-            <input type="text" id="q3" placeholder="ONE WORD/NUMBER"></label></div>
-
-          <div class="q"><label><strong>4</strong> Wallet contained approximately £:
-            <input type="text" id="q4" placeholder="ONE WORD/NUMBER"></label></div>
-
-          <div class="q"><label><strong>5</strong> Date of theft:
-            <input type="text" id="q5" placeholder="ONE WORD/NUMBER"></label></div>
-
-          <div class="q"><label><strong>6</strong> _____ Apartments (No 15):
-            <input type="text" id="q6" placeholder="ONE WORD/NUMBER"></label></div>
-
-          <div class="q"><label><strong>7</strong> Location: outside the _____ at about 4 pm:
-            <input type="text" id="q7" placeholder="ONE WORD/NUMBER"></label></div>
-
-          <div class="q"><label><strong>8</strong> Boys asked for the _____ then ran off:
-            <input type="text" id="q8" placeholder="ONE WORD/NUMBER"></label></div>
-
-          <div class="q"><label><strong>9</strong> Suspect: slim build, about 12, with _____ hair:
-            <input type="text" id="q9" placeholder="ONE WORD/NUMBER"></label></div>
-
-          <div class="q"><label><strong>10</strong> Crime reference number:
-            <input type="text" id="q10" placeholder="ONE WORD/NUMBER"></label></div>
         `;
       }
 
+      // =========================
+      // SECTION 2 (unchanged)
+      // =========================
       if (sectionIdx === 2) {
         sectionTitle.textContent = "SECTION 2 — Questions 11–20";
         questionsEl.innerHTML = `
@@ -305,6 +420,9 @@
         bindABCRadios([15,16,17,18,19,20]);
       }
 
+      // =========================
+      // SECTION 3 (unchanged)
+      // =========================
       if (sectionIdx === 3) {
         sectionTitle.textContent = "SECTION 3 — Questions 21–30";
         questionsEl.innerHTML = `
@@ -373,6 +491,9 @@
         bindMCQRadios([21,22,23,24,25]);
       }
 
+      // =========================
+      // SECTION 4 (unchanged)
+      // =========================
       if (sectionIdx === 4) {
         sectionTitle.textContent = "SECTION 4 — Questions 31–40";
         questionsEl.innerHTML = `
@@ -463,7 +584,6 @@
       function update() {
         const picked = boxes.filter(b => b.checked).map(b => b.value);
         if (picked.length > 2) {
-          // If user tries a 3rd, undo the last one clicked (best-effort)
           const last = boxes.find(b => b === document.activeElement);
           if (last) last.checked = false;
         }
@@ -509,7 +629,6 @@
         radios.forEach(r => r.disabled = disabled);
       }
 
-      // Also disable checkboxes groups in section 2
       if (sec === 2) {
         document.querySelectorAll(`input[name="q11_12_pick"], input[name="q13_14_pick"]`)
           .forEach(x => x.disabled = disabled);
@@ -521,7 +640,6 @@
       const secObj = a.sections[String(sectionIdx)] || {};
       const saved = secObj.answers || {};
 
-      // Restore text inputs q1..q40
       Object.keys(saved).forEach(k => {
         const v = saved[k];
         if (k.startsWith("q")) {
@@ -530,7 +648,6 @@
         }
       });
 
-      // Restore radios (A/B/C etc.)
       for (let q = 1; q <= 40; q++) {
         const key = `q${q}`;
         const v = saved[key];
@@ -539,12 +656,10 @@
         if (r) r.checked = true;
       }
 
-      // Restore section 2 checkbox picks from q11/q12 and q13/q14
       if (sectionIdx === 2) {
         const p1112 = [saved.q11, saved.q12].filter(Boolean);
         const p1314 = [saved.q13, saved.q14].filter(Boolean);
 
-        // Clear then re-check
         document.querySelectorAll(`input[name="q11_12_pick"]`).forEach(b => b.checked = false);
         document.querySelectorAll(`input[name="q13_14_pick"]`).forEach(b => b.checked = false);
 
@@ -557,12 +672,10 @@
           if (b) b.checked = true;
         });
 
-        // Re-bind (re-fills readonly inputs)
         bindTwoPick("q11_12_pick", "q11", "q12");
         bindTwoPick("q13_14_pick", "q13", "q14");
       }
 
-      // Auto-save on typing
       const st = loadState();
       if (!st.lockedSections[String(sectionIdx)]) {
         const { qFrom, qTo } = SECTIONS[sectionIdx - 1];
@@ -581,8 +694,6 @@
       const sec = a.sections[String(sectionIdx)];
 
       const answers = {};
-
-      // Determine range
       const { qFrom, qTo } = SECTIONS[sectionIdx - 1];
 
       for (let q = qFrom; q <= qTo; q++) {
@@ -590,14 +701,12 @@
         if (text && text.type === "text") {
           answers[`q${q}`] = (text.value || "").trim();
         } else {
-          // radios
           const picked = document.querySelector(`input[name="q${q}"]:checked`);
           if (picked) answers[`q${q}`] = picked.value;
           else answers[`q${q}`] = answers[`q${q}`] || "";
         }
       }
 
-      // Section 2 special: ensure q11/q12 and q13/q14 get stored (readonly inputs)
       if (sectionIdx === 2) {
         answers.q11 = (document.getElementById("q11")?.value || "").trim();
         answers.q12 = (document.getElementById("q12")?.value || "").trim();
@@ -621,7 +730,6 @@
         const v = (saved[key] || "").trim();
         if (!v) return `Question ${q} is unanswered.`;
       }
-      // Extra check: Section 2 “pick TWO” groups
       if (sectionIdx === 2) {
         if (!saved.q11 || !saved.q12) return "Questions 11–12: please choose TWO options.";
         if (!saved.q13 || !saved.q14) return "Questions 13–14: please choose TWO options.";
@@ -639,21 +747,13 @@
       saveState(st);
 
       const sec = SECTIONS[sectionIdx - 1];
-
-      // Load audio src ONLY for current section
       audio.src = sec.audioSrc;
 
-      // UI states
-      if (meta.started && !meta.ended) {
-        resumeBtn.classList.remove("hidden");
-      } else {
-        resumeBtn.classList.add("hidden");
-      }
+      if (meta.started && !meta.ended) resumeBtn.classList.remove("hidden");
+      else resumeBtn.classList.add("hidden");
 
-      // Lock play if already started (play-once rule)
       playBtn.disabled = !!meta.started;
 
-      // Reset progress UI
       audioProgress.value = 0;
       audioProgressText.textContent = "00:00 / 00:00";
     }
@@ -676,12 +776,10 @@
       }
     }
 
-    // Best-effort: prevent seeking/replay (no controls, but some browsers still allow programmatic seek)
     let lastAllowedTime = 0;
 
     audio.addEventListener("timeupdate", () => {
       updateProgressUI();
-      // Save last time for resume (every tick)
       const st = loadState();
       const secIdx = getCurrentSectionIdx();
       const meta = st.sectionAudio[String(secIdx)] || {};
@@ -689,13 +787,10 @@
       meta.duration = audio.duration || 0;
       st.sectionAudio[String(secIdx)] = meta;
       saveState(st);
-
-      // Track allowed time forward only
       lastAllowedTime = Math.max(lastAllowedTime, audio.currentTime || 0);
     });
 
     audio.addEventListener("seeking", () => {
-      // If user/browsers try to seek backward, snap back
       if ((audio.currentTime || 0) + 0.5 < lastAllowedTime) {
         audio.currentTime = lastAllowedTime;
       }
@@ -708,8 +803,6 @@
       meta.ended = true;
       st.sectionAudio[String(secIdx)] = meta;
       saveState(st);
-
-      // Start 2-min review timer automatically
       startReviewTimer(secIdx);
       playBtn.disabled = true;
       resumeBtn.classList.add("hidden");
@@ -721,8 +814,6 @@
 
       const st = loadState();
       const secIdx = getCurrentSectionIdx();
-
-      // Mark started (play-once)
       const meta = st.sectionAudio[String(secIdx)] || { started:false, ended:false, lastTime:0 };
       meta.started = true;
       meta.ended = false;
@@ -732,17 +823,10 @@
 
       playBtn.disabled = true;
       resumeBtn.classList.add("hidden");
-
-      // Reset “forward-only” tracker for this section
       lastAllowedTime = 0;
 
-      try {
-        await audio.play();
-      } catch (e) {
-        console.error(e);
-        topMsg.textContent = "Audio couldn’t start. Try tapping Play again.";
-        // If play fails, allow another attempt WITHOUT breaking play-once rule (still started)
-      }
+      try { await audio.play(); }
+      catch (e) { console.error(e); topMsg.textContent = "Audio couldn’t start. Try tapping Play again."; }
     });
 
     resumeBtn.addEventListener("click", async () => {
@@ -753,7 +837,6 @@
       if (!meta || !meta.started || meta.ended) return;
 
       try {
-        // Continue from saved time (same attempt)
         audio.currentTime = meta.lastTime || 0;
         lastAllowedTime = meta.lastTime || 0;
         await audio.play();
@@ -764,26 +847,20 @@
     });
 
     // ============================================================
-    // Review timer (2 minutes after audio ends)
+    // Review timer (unchanged)
     // ============================================================
     let reviewTick = null;
 
     function startReviewTimer(sectionIdx) {
       const st = loadState();
-
-      // If already has a review end timestamp, keep it (persist across refresh)
       if (!st.reviewEndTsBySection[String(sectionIdx)]) {
         st.reviewEndTsBySection[String(sectionIdx)] = nowMs() + (REVIEW_SECONDS * 1000);
         saveState(st);
       }
 
-      // During review, inputs are editable
       setSectionInputsDisabled(false);
-
-      // Next remains disabled until timer completes
       nextBtn.disabled = true;
 
-      // Start ticking
       if (reviewTick) clearInterval(reviewTick);
       reviewTick = setInterval(() => {
         renderReviewTime();
@@ -821,15 +898,11 @@
     }
 
     function finalizeSection(sectionIdx) {
-      // Save latest answers before locking
       saveSectionAnswers(sectionIdx);
 
-      // Validate that everything is answered
       const err = validateSectionAnswered(sectionIdx);
       if (err) {
-        // If incomplete at lock time, keep unlocked and show error (student must fix)
         qMsg.textContent = err + " Please answer and wait for the timer to finish again.";
-        // Restart a short “extra” review window (15s) so they can submit properly
         const st = loadState();
         st.reviewEndTsBySection[String(sectionIdx)] = nowMs() + (15 * 1000);
         saveState(st);
@@ -837,14 +910,11 @@
         return;
       }
 
-      // Lock section
       const st = loadState();
       st.lockedSections[String(sectionIdx)] = true;
       saveState(st);
 
       setSectionInputsDisabled(true);
-
-      // Unlock next button
       nextBtn.disabled = false;
 
       qMsg.textContent = "Section locked. You can continue.";
@@ -852,7 +922,7 @@
     }
 
     // ============================================================
-    // Navigation / submit
+    // Navigation / submit (unchanged)
     // ============================================================
     nextBtn.addEventListener("click", async () => {
       qMsg.textContent = "";
@@ -871,7 +941,6 @@
         return;
       }
 
-      // Finished Section 4 => submit listening answers and go to writing
       await submitListeningAndGoNext();
     });
 
@@ -880,12 +949,10 @@
       topMsg.textContent = "";
 
       const a = loadAnswers();
-      // Mark complete locally
       a.completed = true;
       a.completed_at = new Date().toISOString();
       saveAnswers(a);
 
-      // Build listening payload (do NOT include empty reading/writing to avoid wiping)
       const payload = {
         submission_id: submissionId,
         lead,
@@ -916,12 +983,11 @@
         return;
       }
 
-      // Next step in the test
       window.location.assign("/writing.html");
     }
 
     // ============================================================
-    // Status UI + load section
+    // Status UI + load section (unchanged)
     // ============================================================
     function updateStatusUI() {
       const st = loadState();
@@ -939,27 +1005,19 @@
       const st = loadState();
       const secIdx = getCurrentSectionIdx();
 
-      // Render questions
       renderSectionQuestions(secIdx);
-
-      // Load audio + state
       loadAudioForSection(secIdx);
 
-      // If audio already ended, show/continue review timer or finalize
       const meta = st.sectionAudio[String(secIdx)] || {};
       if (meta.ended) {
-        // If review timer exists and not over, resume it
         if (st.reviewEndTsBySection[String(secIdx)] && !isReviewOver(secIdx) && !st.lockedSections[String(secIdx)]) {
           startReviewTimer(secIdx);
         }
-        // If review already over but not locked (edge case), finalize
         if (st.reviewEndTsBySection[String(secIdx)] && isReviewOver(secIdx) && !st.lockedSections[String(secIdx)]) {
           finalizeSection(secIdx);
         }
-        // If locked, next enabled
         if (st.lockedSections[String(secIdx)]) nextBtn.disabled = false;
       } else {
-        // Not ended yet => no review time
         reviewTimeEl.textContent = "--:--";
         nextBtn.disabled = true;
       }
@@ -969,7 +1027,6 @@
       sectionTitle.textContent = SECTIONS[secIdx - 1].title;
     }
 
-    // Save as user types/chooses
     document.addEventListener("change", () => {
       const secIdx = getCurrentSectionIdx();
       const st = loadState();
@@ -977,10 +1034,8 @@
       saveSectionAnswers(secIdx);
     });
 
-    // Initial load
     loadCurrentSection();
 
-    // Helper: ensure q11–q12 / q13–q14 readonly fields get saved
     function bindTwoPickAutosave() {
       const secIdx = getCurrentSectionIdx();
       if (secIdx !== 2) return;
@@ -991,7 +1046,6 @@
       });
     }
     bindTwoPickAutosave();
-
   </script>
 
 </body>
