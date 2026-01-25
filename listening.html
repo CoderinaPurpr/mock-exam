@@ -1,0 +1,998 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IELTS Mock Exam — Listening</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Tiny helpers (safe, won’t fight your style.css) */
+    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .spacer { height: 12px; }
+    .hidden { display:none !important; }
+    .notice { padding:10px 12px; border-radius:10px; background: rgba(0,0,0,.04); }
+    .timerBar { font-weight:700; }
+    .danger { color:#b00020; }
+    .q { margin: 10px 0; }
+    .q input[type="text"], .q input[type="email"] { max-width: 340px; }
+    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 900px){ .grid2 { grid-template-columns: 1fr; } }
+    .opt { margin: 6px 0; }
+    .btn.secondary { opacity:.9; }
+    .small { font-size: .9em; opacity: .85; }
+    .progressWrap { width: 100%; max-width: 520px; }
+    .progress { width: 100%; }
+  </style>
+</head>
+<body>
+
+  <main class="container">
+    <h1>Listening</h1>
+
+    <p class="muted">
+      You can play each section audio <strong>only once</strong>.
+      When the audio ends, you will get <strong>2 minutes</strong> to check and change your answers.
+    </p>
+
+    <div id="topMsg" class="error" style="min-height:1.2em;"></div>
+
+    <!-- SECTION NAV / STATUS -->
+    <div class="card">
+      <div class="row">
+        <div><strong>Test:</strong> IELTS Listening — Test 1</div>
+        <div class="spacer"></div>
+        <div id="sectionStatus" class="notice">Loading…</div>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="row">
+        <button id="playBtn" class="btn" type="button">Play Section Audio</button>
+        <button id="resumeBtn" class="btn secondary hidden" type="button">Resume</button>
+
+        <div class="timerBar">
+          Review time: <span id="reviewTime">--:--</span>
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="progressWrap">
+        <input id="audioProgress" class="progress" type="range" min="0" max="100" value="0" disabled />
+        <div class="small" id="audioProgressText">00:00 / 00:00</div>
+      </div>
+
+      <!-- Embedded audio element (no controls; play via button) -->
+      <audio id="audio" preload="none"></audio>
+
+      <div class="spacer"></div>
+
+      <div class="row">
+        <button id="nextBtn" class="btn secondary" type="button" disabled>Next Section</button>
+        <span class="small">Next unlocks when the 2-minute review ends.</span>
+      </div>
+    </div>
+
+    <!-- QUESTIONS -->
+    <div class="card" id="questionsCard">
+      <h2 id="sectionTitle">Section</h2>
+      <div id="questions"></div>
+      <p id="qMsg" class="error" style="min-height:1.2em;"></p>
+    </div>
+  </main>
+
+  <script>
+    // ============================================================
+    // Guard: must start from landing page (index.html)
+    // ============================================================
+    (function guard() {
+      let lead = null;
+      try { lead = JSON.parse(localStorage.getItem("mock_lead") || "null"); } catch {}
+      const submissionId = localStorage.getItem("mock_submission_id");
+      if (!lead || !lead.name || !lead.email || !submissionId) {
+        window.location.assign("/index.html");
+      }
+    })();
+
+    // ============================================================
+    // Config
+    // ============================================================
+    const TEST_ID = "IELTS_LISTENING_T1";
+    const REVIEW_SECONDS = 2 * 60;
+
+    // TODO: Put your MP3s here (create these paths/files in your repo)
+    // Example: /assets/listening/section1.mp3 etc.
+    const SECTIONS = [
+      { idx: 1, title: "SECTION 1 (Questions 1–10)",  audioSrc: "/assets/listening/section1.mp3", qFrom: 1,  qTo: 10 },
+      { idx: 2, title: "SECTION 2 (Questions 11–20)", audioSrc: "/assets/listening/section2.mp3", qFrom: 11, qTo: 20 },
+      { idx: 3, title: "SECTION 3 (Questions 21–30)", audioSrc: "/assets/listening/section3.mp3", qFrom: 21, qTo: 30 },
+      { idx: 4, title: "SECTION 4 (Questions 31–40)", audioSrc: "/assets/listening/section4.mp3", qFrom: 31, qTo: 40 },
+    ];
+
+    // Storage keys (scoped per submission so shared laptops don't collide)
+    const submissionId = localStorage.getItem("mock_submission_id");
+    const lead = JSON.parse(localStorage.getItem("mock_lead") || "null");
+
+    const KEY = {
+      STATE: `listening_state_${submissionId}`,          // { currentSection, reviewEndTsBySection, sectionAudio, lockedSections }
+      ANSWERS: `mock_listening_answers_${submissionId}`, // { test_id, sections:{1:{answers...},...}, completed }
+    };
+
+    // ============================================================
+    // DOM
+    // ============================================================
+    const topMsg = document.getElementById("topMsg");
+    const sectionStatus = document.getElementById("sectionStatus");
+    const sectionTitle = document.getElementById("sectionTitle");
+    const questionsEl = document.getElementById("questions");
+    const qMsg = document.getElementById("qMsg");
+
+    const playBtn = document.getElementById("playBtn");
+    const resumeBtn = document.getElementById("resumeBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    const reviewTimeEl = document.getElementById("reviewTime");
+
+    const audio = document.getElementById("audio");
+    const audioProgress = document.getElementById("audioProgress");
+    const audioProgressText = document.getElementById("audioProgressText");
+
+    // ============================================================
+    // State helpers
+    // ============================================================
+    function loadState() {
+      let s = null;
+      try { s = JSON.parse(localStorage.getItem(KEY.STATE) || "null"); } catch {}
+      if (!s || typeof s !== "object") {
+        s = {
+          currentSection: 1,
+          // sectionAudio[sectionIdx] = { started, ended, lastTime, duration }
+          sectionAudio: {},
+          // reviewEndTsBySection[sectionIdx] = timestamp ms when review ends
+          reviewEndTsBySection: {},
+          // lockedSections[sectionIdx] = true when review timer ended (section finalized)
+          lockedSections: {}
+        };
+        saveState(s);
+      }
+      return s;
+    }
+
+    function saveState(s) {
+      localStorage.setItem(KEY.STATE, JSON.stringify(s));
+    }
+
+    function loadAnswers() {
+      let a = null;
+      try { a = JSON.parse(localStorage.getItem(KEY.ANSWERS) || "null"); } catch {}
+      if (!a || typeof a !== "object") {
+        a = { test_id: TEST_ID, sections: {}, completed: false };
+        localStorage.setItem(KEY.ANSWERS, JSON.stringify(a));
+      }
+      return a;
+    }
+
+    function saveAnswers(a) {
+      localStorage.setItem(KEY.ANSWERS, JSON.stringify(a));
+    }
+
+    function nowMs() { return Date.now(); }
+
+    // ============================================================
+    // Question rendering (exactly your 40 questions)
+    // ============================================================
+    function renderSectionQuestions(sectionIdx) {
+      questionsEl.innerHTML = "";
+      qMsg.textContent = "";
+
+      if (sectionIdx === 1) {
+        sectionTitle.textContent = "SECTION 1 — Questions 1–10";
+        questionsEl.innerHTML = `
+          <p><strong>Questions 1–10</strong><br>
+            Complete the form below. Write <strong>ONE WORD AND/OR A NUMBER</strong> for each answer.
+          </p>
+
+          <div class="notice">
+            <strong>CRIME REPORT FORM</strong><br>
+            Type of crime: theft<br><br>
+            <strong>Personal information</strong><br>
+            Name (example): Louise Taylor<br>
+            Date of birth: 14 December 1977<br>
+            Occupation: interior designer<br>
+            Length of stay: two months
+          </div>
+
+          <div class="q"><label><strong>1</strong> Nationality:
+            <input type="text" id="q1" placeholder="ONE WORD/NUMBER"></label></div>
+
+          <div class="q"><label><strong>2</strong> Reason for visit: business (to buy antique …):
+            <input type="text" id="q2" placeholder="ONE WORD/NUMBER"></label></div>
+
+          <div class="q"><label><strong>3</strong> Current address:
+            <input type="text" id="q3" placeholder="ONE WORD/NUMBER"></label></div>
+
+          <div class="q"><label><strong>4</strong> Wallet contained approximately £:
+            <input type="text" id="q4" placeholder="ONE WORD/NUMBER"></label></div>
+
+          <div class="q"><label><strong>5</strong> Date of theft:
+            <input type="text" id="q5" placeholder="ONE WORD/NUMBER"></label></div>
+
+          <div class="q"><label><strong>6</strong> _____ Apartments (No 15):
+            <input type="text" id="q6" placeholder="ONE WORD/NUMBER"></label></div>
+
+          <div class="q"><label><strong>7</strong> Location: outside the _____ at about 4 pm:
+            <input type="text" id="q7" placeholder="ONE WORD/NUMBER"></label></div>
+
+          <div class="q"><label><strong>8</strong> Boys asked for the _____ then ran off:
+            <input type="text" id="q8" placeholder="ONE WORD/NUMBER"></label></div>
+
+          <div class="q"><label><strong>9</strong> Suspect: slim build, about 12, with _____ hair:
+            <input type="text" id="q9" placeholder="ONE WORD/NUMBER"></label></div>
+
+          <div class="q"><label><strong>10</strong> Crime reference number:
+            <input type="text" id="q10" placeholder="ONE WORD/NUMBER"></label></div>
+        `;
+      }
+
+      if (sectionIdx === 2) {
+        sectionTitle.textContent = "SECTION 2 — Questions 11–20";
+        questionsEl.innerHTML = `
+          <p><strong>Induction talk for new apprentices</strong></p>
+
+          <div class="notice">
+            <strong>Questions 11–12</strong><br>
+            Choose <strong>TWO</strong> letters, A–E.
+          </div>
+
+          <div class="q">
+            <p>Which TWO pieces of advice for the first week of an apprenticeship does the manager give?</p>
+            <label class="opt"><input type="checkbox" name="q11_12_pick" value="A"> A get to know colleagues</label><br>
+            <label class="opt"><input type="checkbox" name="q11_12_pick" value="B"> B learn from any mistakes</label><br>
+            <label class="opt"><input type="checkbox" name="q11_12_pick" value="C"> C ask lots of questions</label><br>
+            <label class="opt"><input type="checkbox" name="q11_12_pick" value="D"> D react positively to feedback</label><br>
+            <label class="opt"><input type="checkbox" name="q11_12_pick" value="E"> E enjoy new challenges</label>
+            <div class="spacer"></div>
+            <div class="row">
+              <label><strong>11</strong> <input type="text" id="q11" placeholder="A–E" readonly></label>
+              <label><strong>12</strong> <input type="text" id="q12" placeholder="A–E" readonly></label>
+            </div>
+            <p class="small">Pick exactly 2 options above (auto-fills 11 and 12).</p>
+          </div>
+
+          <hr>
+
+          <div class="notice">
+            <strong>Questions 13–14</strong><br>
+            Choose <strong>TWO</strong> letters, A–E.
+          </div>
+
+          <div class="q">
+            <p>Which TWO things does the manager say mentors can help with?</p>
+            <label class="opt"><input type="checkbox" name="q13_14_pick" value="A"> A confidence-building</label><br>
+            <label class="opt"><input type="checkbox" name="q13_14_pick" value="B"> B making career plans</label><br>
+            <label class="opt"><input type="checkbox" name="q13_14_pick" value="C"> C completing difficult tasks</label><br>
+            <label class="opt"><input type="checkbox" name="q13_14_pick" value="D"> D making a weekly timetable</label><br>
+            <label class="opt"><input type="checkbox" name="q13_14_pick" value="E"> E reviewing progress</label>
+            <div class="spacer"></div>
+            <div class="row">
+              <label><strong>13</strong> <input type="text" id="q13" placeholder="A–E" readonly></label>
+              <label><strong>14</strong> <input type="text" id="q14" placeholder="A–E" readonly></label>
+            </div>
+            <p class="small">Pick exactly 2 options above (auto-fills 13 and 14).</p>
+          </div>
+
+          <hr>
+
+          <div class="notice">
+            <strong>Questions 15–20</strong><br>
+            Write the correct letter, A, B or C.
+          </div>
+
+          <p><strong>A</strong> It is encouraged.<br>
+             <strong>B</strong> There are some restrictions.<br>
+             <strong>C</strong> It is against the rules.</p>
+
+          ${renderABC(15, "Using the internet")}
+          ${renderABC(16, "Flexible working")}
+          ${renderABC(17, "Booking holidays")}
+          ${renderABC(18, "Working overtime")}
+          ${renderABC(19, "Wearing trainers")}
+          ${renderABC(20, "Bringing food to work")}
+        `;
+
+        bindTwoPick("q11_12_pick", "q11", "q12");
+        bindTwoPick("q13_14_pick", "q13", "q14");
+        bindABCRadios([15,16,17,18,19,20]);
+      }
+
+      if (sectionIdx === 3) {
+        sectionTitle.textContent = "SECTION 3 — Questions 21–30";
+        questionsEl.innerHTML = `
+          <p><strong>Cities built by the sea</strong></p>
+
+          <div class="notice">
+            <strong>Questions 21–25</strong><br>
+            Choose the correct letter, A, B or C.
+          </div>
+
+          ${renderMCQ(21, "Carla and Rob were surprised to learn that coastal cities…", [
+            ["A", "contain nearly half the world's population."],
+            ["B", "include most of the world's largest cities."],
+            ["C", "are growing twice as fast as other cities."]
+          ])}
+
+          ${renderMCQ(22, "According to Rob, building coastal cities near rivers…", [
+            ["A", "may bring pollution to the cities."],
+            ["B", "may reduce the land available for agriculture."],
+            ["C", "may mean the countryside is spoiled by industry."]
+          ])}
+
+          ${renderMCQ(23, "What mistake was made when building water drainage channels in Miami in the 1950s?", [
+            ["A", "There were not enough of them."],
+            ["B", "They were made of unsuitable materials."],
+            ["C", "They did not allow for the effects of climate change."]
+          ])}
+
+          ${renderMCQ(24, "What do Rob and Carla think the authorities in Miami should do immediately?", [
+            ["A", "take measures to restore ecosystems"],
+            ["B", "pay for a new flood prevention system"],
+            ["C", "stop disposing of waste materials into the ocean"]
+          ])}
+
+          ${renderMCQ(25, "What do they agree should be the priority for international action?", [
+            ["A", "greater coordination of activities"],
+            ["B", "more sharing of information"],
+            ["C", "agreement on shared policies"]
+          ])}
+
+          <hr>
+
+          <div class="notice">
+            <strong>Questions 26–30</strong><br>
+            Choose <strong>FIVE</strong> answers from the box and write the correct letter, A–G.
+          </div>
+
+          <div class="notice">
+            <strong>Decisions</strong><br>
+            A use visuals<br>
+            B keep it short<br>
+            C involve other students<br>
+            D check the information is accurate<br>
+            E provide a handout<br>
+            F focus on one example<br>
+            G do online research
+          </div>
+
+          ${renderAG(26, "Historical background")}
+          ${renderAG(27, "Geographical factors")}
+          ${renderAG(28, "Past mistakes")}
+          ${renderAG(29, "Future risks")}
+          ${renderAG(30, "International implications")}
+        `;
+
+        bindMCQRadios([21,22,23,24,25]);
+      }
+
+      if (sectionIdx === 4) {
+        sectionTitle.textContent = "SECTION 4 — Questions 31–40";
+        questionsEl.innerHTML = `
+          <div class="notice">
+            Complete the notes below. Write <strong>ONE WORD ONLY</strong> for each answer.
+          </div>
+
+          <h3>Marine renewable energy (ocean energy)</h3>
+
+          ${renderText(31, "More energy required because of growth in population and ____")}
+          ${renderText(32, "Advantage (wave energy): waves provide a ____ source of renewable energy")}
+          ${renderText(33, "Problems: waves can move in any ____")}
+          ${renderText(34, "movement of sand, etc. on the ____")}
+          ${renderText(35, "Tides are more ____ than waves")}
+          ${renderText(36, "Planned tidal lagoon in Wales: will be created in a ____ at Swansea")}
+          ${renderText(37, "Stored water is released through ____, driving turbines in reverse")}
+          ${renderText(38, "No ____ is required to make it work")}
+          ${renderText(39, "Likely to create a number of ____")}
+          ${renderText(40, "May harm fish and birds by affecting ____ and building up silt")}
+        `;
+      }
+
+      // Restore saved answers for this section after rendering
+      restoreInputsForSection(sectionIdx);
+
+      // Lock inputs if section already locked
+      const st = loadState();
+      if (st.lockedSections[String(sectionIdx)]) {
+        setSectionInputsDisabled(true);
+        qMsg.textContent = "This section is locked (review time ended).";
+      } else {
+        setSectionInputsDisabled(false);
+      }
+    }
+
+    // --- HTML builders ---
+    function renderText(qNum, label) {
+      return `
+        <div class="q">
+          <label><strong>${qNum}</strong> ${label}<br>
+            <input type="text" id="q${qNum}" placeholder="ONE WORD">
+          </label>
+        </div>
+      `;
+    }
+
+    function renderABC(qNum, label) {
+      return `
+        <div class="q">
+          <p><strong>${qNum}</strong> ${label}</p>
+          <label class="opt"><input type="radio" name="q${qNum}" value="A"> A</label><br>
+          <label class="opt"><input type="radio" name="q${qNum}" value="B"> B</label><br>
+          <label class="opt"><input type="radio" name="q${qNum}" value="C"> C</label>
+        </div>
+      `;
+    }
+
+    function renderMCQ(qNum, stem, options) {
+      const optsHtml = options.map(([letter, text]) => {
+        return `<label class="opt"><input type="radio" name="q${qNum}" value="${letter}"> ${letter} — ${text}</label><br>`;
+      }).join("");
+      return `
+        <div class="q">
+          <p><strong>${qNum}</strong> ${stem}</p>
+          ${optsHtml}
+        </div>
+      `;
+    }
+
+    function renderAG(qNum, label) {
+      return `
+        <div class="q">
+          <label><strong>${qNum}</strong> ${label}:<br>
+            <input type="text" id="q${qNum}" placeholder="A–G">
+          </label>
+        </div>
+      `;
+    }
+
+    // ============================================================
+    // Two-choice checkbox helpers (11–12, 13–14)
+    // ============================================================
+    function bindTwoPick(groupName, outId1, outId2) {
+      const boxes = Array.from(document.querySelectorAll(`input[name="${groupName}"]`));
+      const out1 = document.getElementById(outId1);
+      const out2 = document.getElementById(outId2);
+
+      function update() {
+        const picked = boxes.filter(b => b.checked).map(b => b.value);
+        if (picked.length > 2) {
+          // If user tries a 3rd, undo the last one clicked (best-effort)
+          const last = boxes.find(b => b === document.activeElement);
+          if (last) last.checked = false;
+        }
+        const picked2 = boxes.filter(b => b.checked).map(b => b.value);
+        out1.value = picked2[0] || "";
+        out2.value = picked2[1] || "";
+      }
+
+      boxes.forEach(b => b.addEventListener("change", update));
+      update();
+    }
+
+    function bindABCRadios(qNums) {
+      qNums.forEach(n => {
+        const radios = Array.from(document.querySelectorAll(`input[name="q${n}"]`));
+        radios.forEach(r => r.addEventListener("change", () => saveSectionAnswers(getCurrentSectionIdx())));
+      });
+    }
+
+    function bindMCQRadios(qNums) {
+      qNums.forEach(n => {
+        const radios = Array.from(document.querySelectorAll(`input[name="q${n}"]`));
+        radios.forEach(r => r.addEventListener("change", () => saveSectionAnswers(getCurrentSectionIdx())));
+      });
+    }
+
+    // ============================================================
+    // Section input helpers (save/restore)
+    // ============================================================
+    function getCurrentSectionIdx() {
+      const st = loadState();
+      return Number(st.currentSection || 1);
+    }
+
+    function setSectionInputsDisabled(disabled) {
+      const sec = getCurrentSectionIdx();
+      const { qFrom, qTo } = SECTIONS[sec - 1];
+
+      for (let q = qFrom; q <= qTo; q++) {
+        const text = document.getElementById(`q${q}`);
+        if (text) text.disabled = disabled;
+        const radios = document.querySelectorAll(`input[name="q${q}"]`);
+        radios.forEach(r => r.disabled = disabled);
+      }
+
+      // Also disable checkboxes groups in section 2
+      if (sec === 2) {
+        document.querySelectorAll(`input[name="q11_12_pick"], input[name="q13_14_pick"]`)
+          .forEach(x => x.disabled = disabled);
+      }
+    }
+
+    function restoreInputsForSection(sectionIdx) {
+      const a = loadAnswers();
+      const secObj = a.sections[String(sectionIdx)] || {};
+      const saved = secObj.answers || {};
+
+      // Restore text inputs q1..q40
+      Object.keys(saved).forEach(k => {
+        const v = saved[k];
+        if (k.startsWith("q")) {
+          const el = document.getElementById(k);
+          if (el && el.tagName === "INPUT" && el.type === "text") el.value = v;
+        }
+      });
+
+      // Restore radios (A/B/C etc.)
+      for (let q = 1; q <= 40; q++) {
+        const key = `q${q}`;
+        const v = saved[key];
+        if (!v) continue;
+        const r = document.querySelector(`input[name="q${q}"][value="${v}"]`);
+        if (r) r.checked = true;
+      }
+
+      // Restore section 2 checkbox picks from q11/q12 and q13/q14
+      if (sectionIdx === 2) {
+        const p1112 = [saved.q11, saved.q12].filter(Boolean);
+        const p1314 = [saved.q13, saved.q14].filter(Boolean);
+
+        // Clear then re-check
+        document.querySelectorAll(`input[name="q11_12_pick"]`).forEach(b => b.checked = false);
+        document.querySelectorAll(`input[name="q13_14_pick"]`).forEach(b => b.checked = false);
+
+        p1112.forEach(letter => {
+          const b = document.querySelector(`input[name="q11_12_pick"][value="${letter}"]`);
+          if (b) b.checked = true;
+        });
+        p1314.forEach(letter => {
+          const b = document.querySelector(`input[name="q13_14_pick"][value="${letter}"]`);
+          if (b) b.checked = true;
+        });
+
+        // Re-bind (re-fills readonly inputs)
+        bindTwoPick("q11_12_pick", "q11", "q12");
+        bindTwoPick("q13_14_pick", "q13", "q14");
+      }
+
+      // Auto-save on typing
+      const st = loadState();
+      if (!st.lockedSections[String(sectionIdx)]) {
+        const { qFrom, qTo } = SECTIONS[sectionIdx - 1];
+        for (let q = qFrom; q <= qTo; q++) {
+          const t = document.getElementById(`q${q}`);
+          if (t && t.type === "text") {
+            t.addEventListener("input", () => saveSectionAnswers(sectionIdx));
+          }
+        }
+      }
+    }
+
+    function saveSectionAnswers(sectionIdx) {
+      const a = loadAnswers();
+      if (!a.sections[String(sectionIdx)]) a.sections[String(sectionIdx)] = {};
+      const sec = a.sections[String(sectionIdx)];
+
+      const answers = {};
+
+      // Determine range
+      const { qFrom, qTo } = SECTIONS[sectionIdx - 1];
+
+      for (let q = qFrom; q <= qTo; q++) {
+        const text = document.getElementById(`q${q}`);
+        if (text && text.type === "text") {
+          answers[`q${q}`] = (text.value || "").trim();
+        } else {
+          // radios
+          const picked = document.querySelector(`input[name="q${q}"]:checked`);
+          if (picked) answers[`q${q}`] = picked.value;
+          else answers[`q${q}`] = answers[`q${q}`] || "";
+        }
+      }
+
+      // Section 2 special: ensure q11/q12 and q13/q14 get stored (readonly inputs)
+      if (sectionIdx === 2) {
+        answers.q11 = (document.getElementById("q11")?.value || "").trim();
+        answers.q12 = (document.getElementById("q12")?.value || "").trim();
+        answers.q13 = (document.getElementById("q13")?.value || "").trim();
+        answers.q14 = (document.getElementById("q14")?.value || "").trim();
+      }
+
+      sec.answers = answers;
+      sec.saved_at = new Date().toISOString();
+      saveAnswers(a);
+    }
+
+    function validateSectionAnswered(sectionIdx) {
+      const a = loadAnswers();
+      const sec = a.sections[String(sectionIdx)];
+      const saved = (sec && sec.answers) ? sec.answers : {};
+
+      const { qFrom, qTo } = SECTIONS[sectionIdx - 1];
+      for (let q = qFrom; q <= qTo; q++) {
+        const key = `q${q}`;
+        const v = (saved[key] || "").trim();
+        if (!v) return `Question ${q} is unanswered.`;
+      }
+      // Extra check: Section 2 “pick TWO” groups
+      if (sectionIdx === 2) {
+        if (!saved.q11 || !saved.q12) return "Questions 11–12: please choose TWO options.";
+        if (!saved.q13 || !saved.q14) return "Questions 13–14: please choose TWO options.";
+      }
+      return null;
+    }
+
+    // ============================================================
+    // Audio: play once (persist), plus resume, plus progress
+    // ============================================================
+    function loadAudioForSection(sectionIdx) {
+      const st = loadState();
+      const meta = st.sectionAudio[String(sectionIdx)] || { started:false, ended:false, lastTime:0, duration:0 };
+      st.sectionAudio[String(sectionIdx)] = meta;
+      saveState(st);
+
+      const sec = SECTIONS[sectionIdx - 1];
+
+      // Load audio src ONLY for current section
+      audio.src = sec.audioSrc;
+
+      // UI states
+      if (meta.started && !meta.ended) {
+        resumeBtn.classList.remove("hidden");
+      } else {
+        resumeBtn.classList.add("hidden");
+      }
+
+      // Lock play if already started (play-once rule)
+      playBtn.disabled = !!meta.started;
+
+      // Reset progress UI
+      audioProgress.value = 0;
+      audioProgressText.textContent = "00:00 / 00:00";
+    }
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60).toString().padStart(2,"0");
+      const s = Math.floor(sec % 60).toString().padStart(2,"0");
+      return `${m}:${s}`;
+    }
+
+    function updateProgressUI() {
+      const cur = audio.currentTime || 0;
+      const dur = audio.duration || 0;
+      if (dur > 0) {
+        audioProgress.value = Math.min(100, Math.floor((cur / dur) * 100));
+        audioProgressText.textContent = `${formatTime(cur)} / ${formatTime(dur)}`;
+      } else {
+        audioProgress.value = 0;
+        audioProgressText.textContent = `${formatTime(cur)} / 00:00`;
+      }
+    }
+
+    // Best-effort: prevent seeking/replay (no controls, but some browsers still allow programmatic seek)
+    let lastAllowedTime = 0;
+
+    audio.addEventListener("timeupdate", () => {
+      updateProgressUI();
+      // Save last time for resume (every tick)
+      const st = loadState();
+      const secIdx = getCurrentSectionIdx();
+      const meta = st.sectionAudio[String(secIdx)] || {};
+      meta.lastTime = audio.currentTime || 0;
+      meta.duration = audio.duration || 0;
+      st.sectionAudio[String(secIdx)] = meta;
+      saveState(st);
+
+      // Track allowed time forward only
+      lastAllowedTime = Math.max(lastAllowedTime, audio.currentTime || 0);
+    });
+
+    audio.addEventListener("seeking", () => {
+      // If user/browsers try to seek backward, snap back
+      if ((audio.currentTime || 0) + 0.5 < lastAllowedTime) {
+        audio.currentTime = lastAllowedTime;
+      }
+    });
+
+    audio.addEventListener("ended", () => {
+      const st = loadState();
+      const secIdx = getCurrentSectionIdx();
+      const meta = st.sectionAudio[String(secIdx)] || {};
+      meta.ended = true;
+      st.sectionAudio[String(secIdx)] = meta;
+      saveState(st);
+
+      // Start 2-min review timer automatically
+      startReviewTimer(secIdx);
+      playBtn.disabled = true;
+      resumeBtn.classList.add("hidden");
+    });
+
+    playBtn.addEventListener("click", async () => {
+      topMsg.textContent = "";
+      qMsg.textContent = "";
+
+      const st = loadState();
+      const secIdx = getCurrentSectionIdx();
+
+      // Mark started (play-once)
+      const meta = st.sectionAudio[String(secIdx)] || { started:false, ended:false, lastTime:0 };
+      meta.started = true;
+      meta.ended = false;
+      meta.lastTime = 0;
+      st.sectionAudio[String(secIdx)] = meta;
+      saveState(st);
+
+      playBtn.disabled = true;
+      resumeBtn.classList.add("hidden");
+
+      // Reset “forward-only” tracker for this section
+      lastAllowedTime = 0;
+
+      try {
+        await audio.play();
+      } catch (e) {
+        console.error(e);
+        topMsg.textContent = "Audio couldn’t start. Try tapping Play again.";
+        // If play fails, allow another attempt WITHOUT breaking play-once rule (still started)
+      }
+    });
+
+    resumeBtn.addEventListener("click", async () => {
+      topMsg.textContent = "";
+      const st = loadState();
+      const secIdx = getCurrentSectionIdx();
+      const meta = st.sectionAudio[String(secIdx)];
+      if (!meta || !meta.started || meta.ended) return;
+
+      try {
+        // Continue from saved time (same attempt)
+        audio.currentTime = meta.lastTime || 0;
+        lastAllowedTime = meta.lastTime || 0;
+        await audio.play();
+      } catch (e) {
+        console.error(e);
+        topMsg.textContent = "Audio couldn’t resume. Try again.";
+      }
+    });
+
+    // ============================================================
+    // Review timer (2 minutes after audio ends)
+    // ============================================================
+    let reviewTick = null;
+
+    function startReviewTimer(sectionIdx) {
+      const st = loadState();
+
+      // If already has a review end timestamp, keep it (persist across refresh)
+      if (!st.reviewEndTsBySection[String(sectionIdx)]) {
+        st.reviewEndTsBySection[String(sectionIdx)] = nowMs() + (REVIEW_SECONDS * 1000);
+        saveState(st);
+      }
+
+      // During review, inputs are editable
+      setSectionInputsDisabled(false);
+
+      // Next remains disabled until timer completes
+      nextBtn.disabled = true;
+
+      // Start ticking
+      if (reviewTick) clearInterval(reviewTick);
+      reviewTick = setInterval(() => {
+        renderReviewTime();
+        if (isReviewOver(sectionIdx)) {
+          clearInterval(reviewTick);
+          reviewTick = null;
+          finalizeSection(sectionIdx);
+        }
+      }, 250);
+
+      renderReviewTime();
+    }
+
+    function isReviewOver(sectionIdx) {
+      const st = loadState();
+      const endTs = st.reviewEndTsBySection[String(sectionIdx)] || 0;
+      return endTs > 0 && nowMs() >= endTs;
+    }
+
+    function renderReviewTime() {
+      const st = loadState();
+      const secIdx = getCurrentSectionIdx();
+      const endTs = st.reviewEndTsBySection[String(secIdx)] || 0;
+
+      if (!endTs) {
+        reviewTimeEl.textContent = "--:--";
+        reviewTimeEl.classList.remove("danger");
+        return;
+      }
+
+      const remaining = Math.max(0, Math.floor((endTs - nowMs()) / 1000));
+      reviewTimeEl.textContent = formatTime(remaining);
+      if (remaining <= 10) reviewTimeEl.classList.add("danger");
+      else reviewTimeEl.classList.remove("danger");
+    }
+
+    function finalizeSection(sectionIdx) {
+      // Save latest answers before locking
+      saveSectionAnswers(sectionIdx);
+
+      // Validate that everything is answered
+      const err = validateSectionAnswered(sectionIdx);
+      if (err) {
+        // If incomplete at lock time, keep unlocked and show error (student must fix)
+        qMsg.textContent = err + " Please answer and wait for the timer to finish again.";
+        // Restart a short “extra” review window (15s) so they can submit properly
+        const st = loadState();
+        st.reviewEndTsBySection[String(sectionIdx)] = nowMs() + (15 * 1000);
+        saveState(st);
+        startReviewTimer(sectionIdx);
+        return;
+      }
+
+      // Lock section
+      const st = loadState();
+      st.lockedSections[String(sectionIdx)] = true;
+      saveState(st);
+
+      setSectionInputsDisabled(true);
+
+      // Unlock next button
+      nextBtn.disabled = false;
+
+      qMsg.textContent = "Section locked. You can continue.";
+      updateStatusUI();
+    }
+
+    // ============================================================
+    // Navigation / submit
+    // ============================================================
+    nextBtn.addEventListener("click", async () => {
+      qMsg.textContent = "";
+      const st = loadState();
+      const secIdx = getCurrentSectionIdx();
+
+      if (!st.lockedSections[String(secIdx)]) {
+        qMsg.textContent = "You can continue after the 2-minute review ends.";
+        return;
+      }
+
+      if (secIdx < 4) {
+        st.currentSection = secIdx + 1;
+        saveState(st);
+        loadCurrentSection();
+        return;
+      }
+
+      // Finished Section 4 => submit listening answers and go to writing
+      await submitListeningAndGoNext();
+    });
+
+    async function submitListeningAndGoNext() {
+      qMsg.textContent = "";
+      topMsg.textContent = "";
+
+      const a = loadAnswers();
+      // Mark complete locally
+      a.completed = true;
+      a.completed_at = new Date().toISOString();
+      saveAnswers(a);
+
+      // Build listening payload (do NOT include empty reading/writing to avoid wiping)
+      const payload = {
+        submission_id: submissionId,
+        lead,
+        answers: {
+          listening: {
+            test_id: TEST_ID,
+            sections: a.sections,
+            completed: true
+          }
+        }
+      };
+
+      try {
+        const res = await fetch("/api/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const text = await res.text();
+        if (!res.ok) {
+          topMsg.textContent = "Submit failed: " + text;
+          return;
+        }
+      } catch (e) {
+        console.error(e);
+        topMsg.textContent = "Network error submitting. Please try again.";
+        return;
+      }
+
+      // Next step in the test
+      window.location.assign("/writing.html");
+    }
+
+    // ============================================================
+    // Status UI + load section
+    // ============================================================
+    function updateStatusUI() {
+      const st = loadState();
+      const secIdx = getCurrentSectionIdx();
+      const locked = !!st.lockedSections[String(secIdx)];
+      const meta = st.sectionAudio[String(secIdx)] || { started:false, ended:false };
+
+      sectionStatus.textContent =
+        `Section ${secIdx}/4 • Audio: ` +
+        (meta.started ? (meta.ended ? "played" : "in progress") : "not played") +
+        ` • Answers: ` + (locked ? "locked" : "editable");
+    }
+
+    function loadCurrentSection() {
+      const st = loadState();
+      const secIdx = getCurrentSectionIdx();
+
+      // Render questions
+      renderSectionQuestions(secIdx);
+
+      // Load audio + state
+      loadAudioForSection(secIdx);
+
+      // If audio already ended, show/continue review timer or finalize
+      const meta = st.sectionAudio[String(secIdx)] || {};
+      if (meta.ended) {
+        // If review timer exists and not over, resume it
+        if (st.reviewEndTsBySection[String(secIdx)] && !isReviewOver(secIdx) && !st.lockedSections[String(secIdx)]) {
+          startReviewTimer(secIdx);
+        }
+        // If review already over but not locked (edge case), finalize
+        if (st.reviewEndTsBySection[String(secIdx)] && isReviewOver(secIdx) && !st.lockedSections[String(secIdx)]) {
+          finalizeSection(secIdx);
+        }
+        // If locked, next enabled
+        if (st.lockedSections[String(secIdx)]) nextBtn.disabled = false;
+      } else {
+        // Not ended yet => no review time
+        reviewTimeEl.textContent = "--:--";
+        nextBtn.disabled = true;
+      }
+
+      updateProgressUI();
+      updateStatusUI();
+      sectionTitle.textContent = SECTIONS[secIdx - 1].title;
+    }
+
+    // Save as user types/chooses
+    document.addEventListener("change", () => {
+      const secIdx = getCurrentSectionIdx();
+      const st = loadState();
+      if (st.lockedSections[String(secIdx)]) return;
+      saveSectionAnswers(secIdx);
+    });
+
+    // Initial load
+    loadCurrentSection();
+
+    // Helper: ensure q11–q12 / q13–q14 readonly fields get saved
+    function bindTwoPickAutosave() {
+      const secIdx = getCurrentSectionIdx();
+      if (secIdx !== 2) return;
+      ["q11","q12","q13","q14"].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener("input", () => saveSectionAnswers(2));
+      });
+    }
+    bindTwoPickAutosave();
+
+  </script>
+
+</body>
+</html>
