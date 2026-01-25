@@ -38,6 +38,89 @@
     .crime-form__underline{border-bottom:1px dotted #111;padding:0 6px}
     .crime-form__input{max-width:220px;padding:6px 8px}
     @media (max-width: 720px){ .crime-form__row{grid-template-columns:1fr} }
+
+/* ============================================================
+   SECTION 4 — NOTES LAYOUT (matches screenshot)
+   ============================================================ */
+.notes-box{
+  border:1px solid #ccc;
+  border-radius:8px;
+  padding:14px 14px 10px;
+  margin-top:12px;
+  background:#fff;
+  max-width: 820px;
+}
+
+.notes-instruction{
+  font-style: italic;
+  margin: 0 0 10px 0;
+  opacity: .9;
+}
+
+.notes-title{
+  font-weight: 800;
+  text-align: center;
+  font-size: 1.15rem;
+  padding: 8px 10px;
+  border:1px solid #ccc;
+  border-radius:6px;
+  margin: 0 0 12px 0;
+}
+
+.notes-section{
+  margin: 10px 0 0 0;
+}
+
+.notes-section h4{
+  margin: 10px 0 6px 0;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.notes-line{
+  margin: 4px 0;
+  line-height: 1.35;
+}
+
+.notes-bullets{
+  margin: 6px 0 6px 22px;
+  padding: 0;
+}
+
+.notes-bullets li{
+  margin: 4px 0;
+}
+
+.notes-q{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.notes-qnum{
+  font-weight: 800;
+}
+
+.notes-blank{
+  width: 240px;
+  max-width: 60vw;
+  border: none;
+  border-bottom: 2px dotted #111;
+  background: transparent;
+  padding: 2px 4px;
+  outline: none;
+}
+
+.notes-blank:disabled{
+  opacity: .7;
+}
+
+@media (max-width: 520px){
+  .notes-blank{ width: 180px; }
+}
+
+
   </style>
 </head>
 <body>
@@ -491,30 +574,146 @@
         bindMCQRadios([21,22,23,24,25]);
       }
 
-      // =========================
-      // SECTION 4 (unchanged)
-      // =========================
-      if (sectionIdx === 4) {
-        sectionTitle.textContent = "SECTION 4 — Questions 31–40";
-        questionsEl.innerHTML = `
-          <div class="notice">
-            Complete the notes below. Write <strong>ONE WORD ONLY</strong> for each answer.
-          </div>
+// =========================
+// SECTION 4 — MATCH SCREENSHOT NOTES LAYOUT
+// =========================
+if (sectionIdx === 4) {
+  sectionTitle.textContent = "SECTION 4 — Questions 31–40";
 
-          <h3>Marine renewable energy (ocean energy)</h3>
+  questionsEl.innerHTML = `
+    <div class="notes-box">
+      <p class="notes-instruction">Write <strong>ONE WORD ONLY</strong> for each answer.</p>
 
-          ${renderText(31, "More energy required because of growth in population and ____")}
-          ${renderText(32, "Advantage (wave energy): waves provide a ____ source of renewable energy")}
-          ${renderText(33, "Problems: waves can move in any ____")}
-          ${renderText(34, "movement of sand, etc. on the ____")}
-          ${renderText(35, "Tides are more ____ than waves")}
-          ${renderText(36, "Planned tidal lagoon in Wales: will be created in a ____ at Swansea")}
-          ${renderText(37, "Stored water is released through ____, driving turbines in reverse")}
-          ${renderText(38, "No ____ is required to make it work")}
-          ${renderText(39, "Likely to create a number of ____")}
-          ${renderText(40, "May harm fish and birds by affecting ____ and building up silt")}
-        `;
-      }
+      <div class="notes-title">Marine renewable energy (ocean energy)</div>
+
+      <div class="notes-section">
+        <h4>Introduction</h4>
+
+        <div class="notes-line">
+          More energy required because of growth in population and
+          <span class="notes-q">
+            <span class="notes-qnum">31</span>
+            <input id="q31" class="notes-blank" type="text" placeholder="" />
+          </span>
+        </div>
+
+        <div class="notes-line"><strong>What’s needed:</strong></div>
+        <ul class="notes-bullets">
+          <li>renewable energy sources</li>
+          <li>methods that won’t create pollution</li>
+        </ul>
+      </div>
+
+      <div class="notes-section">
+        <h4>Wave energy</h4>
+
+        <div class="notes-line">
+          Advantage: waves provide a
+          <span class="notes-q">
+            <span class="notes-qnum">32</span>
+            <input id="q32" class="notes-blank" type="text" placeholder="" />
+          </span>
+          source of renewable energy
+        </div>
+
+        <div class="notes-line">Electricity can be generated using offshore or onshore systems</div>
+        <div class="notes-line">Onshore systems may use a reservoir</div>
+
+        <div class="notes-line"><strong>Problems:</strong></div>
+        <ul class="notes-bullets">
+          <li>
+            waves can move in any
+            <span class="notes-q">
+              <span class="notes-qnum">33</span>
+              <input id="q33" class="notes-blank" type="text" placeholder="" />
+            </span>
+          </li>
+          <li>
+            movement of sand, etc. on the
+            <span class="notes-q">
+              <span class="notes-qnum">34</span>
+              <input id="q34" class="notes-blank" type="text" placeholder="" />
+            </span>
+            of the ocean may be affected
+          </li>
+        </ul>
+      </div>
+
+      <div class="notes-section">
+        <h4>Tidal energy</h4>
+
+        <div class="notes-line">
+          Tides are more
+          <span class="notes-q">
+            <span class="notes-qnum">35</span>
+            <input id="q35" class="notes-blank" type="text" placeholder="" />
+          </span>
+          than waves
+        </div>
+
+        <div class="notes-line"><strong>Planned tidal lagoon in Wales:</strong></div>
+        <ul class="notes-bullets">
+          <li>
+            will be created in a
+            <span class="notes-q">
+              <span class="notes-qnum">36</span>
+              <input id="q36" class="notes-blank" type="text" placeholder="" />
+            </span>
+            at Swansea
+          </li>
+          <li>breakwater (dam) containing 16 turbines</li>
+          <li>rising tide forces water through turbines, generating electricity</li>
+          <li>
+            stored water is released through
+            <span class="notes-q">
+              <span class="notes-qnum">37</span>
+              <input id="q37" class="notes-blank" type="text" placeholder="" />
+            </span>,
+            driving the turbines in the reverse direction
+          </li>
+        </ul>
+
+        <div class="notes-line"><strong>Advantages:</strong></div>
+        <ul class="notes-bullets">
+          <li>not dependent on weather</li>
+          <li>
+            no
+            <span class="notes-q">
+              <span class="notes-qnum">38</span>
+              <input id="q38" class="notes-blank" type="text" placeholder="" />
+            </span>
+            is required to make it work
+          </li>
+          <li>
+            likely to create a number of
+            <span class="notes-q">
+              <span class="notes-qnum">39</span>
+              <input id="q39" class="notes-blank" type="text" placeholder="" />
+            </span>
+          </li>
+        </ul>
+
+        <div class="notes-line"><strong>Problem:</strong></div>
+        <ul class="notes-bullets">
+          <li>
+            may harm fish and birds, e.g. by affecting
+            <span class="notes-q">
+              <span class="notes-qnum">40</span>
+              <input id="q40" class="notes-blank" type="text" placeholder="" />
+            </span>
+            and building up silt
+          </li>
+        </ul>
+      </div>
+
+      <div class="notes-section">
+        <h4>Ocean thermal energy conversion</h4>
+        <div class="notes-line">Uses a difference in temperature between the surface and lower levels</div>
+        <div class="notes-line">Water brought to the surface in a pipe</div>
+      </div>
+    </div>
+  `;
+}
 
       // Restore saved answers for this section after rendering
       restoreInputsForSection(sectionIdx);
