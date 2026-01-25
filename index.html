@@ -16,7 +16,7 @@
     </p>
 
     <p class="muted">
-      Your answers will be reviewed by an examiner.  
+      Your answers will be reviewed by an examiner.
       <strong>Results are not shown on-screen</strong> — we’ll contact you directly with feedback.
     </p>
 
@@ -49,66 +49,47 @@
         I consent to be contacted with my IELTS mock test results.
       </label>
 
-      <p class="error" id="formError"></p>
+      <p class="error" id="formError" style="min-height:1.2em;"></p>
 
-      <button id="startBtn" class="btn">Start Mock Exam</button>
+      <button id="startBtn" class="btn" type="button">Start Mock Exam</button>
     </div>
-
-    <p class="muted">
-      ⏱ Estimated time: 60–90 minutes  
-      <br />
-      🎧 Listening audio can only be played once
-    </p>
   </main>
 
   <script>
-    // Save lead details and start test
-    document.getElementById("startBtn").addEventListener("click", () => {
-      const name = document.getElementById("leadName").value.trim();
-      const email = document.getElementById("leadEmail").value.trim();
-      const whatsapp = document.getElementById("leadWhatsApp").value.trim();
-      const consent = document.getElementById("leadConsent").checked;
-      const errorBox = document.getElementById("formError");
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("startBtn").addEventListener("click", () => {
+        const name = leadName.value.trim();
+        const email = leadEmail.value.trim();
+        const whatsapp = leadWhatsApp.value.trim();
+        const consent = leadConsent.checked;
+        const errorBox = formError;
 
-      errorBox.textContent = "";
+        errorBox.textContent = "";
 
-      if (!name || !email) {
-        errorBox.textContent = "Please enter your name and email.";
-        return;
-      }
+        if (!name || !email) {
+          errorBox.textContent = "Please enter your name and email.";
+          return;
+        }
+        if (!consent) {
+          errorBox.textContent = "Please give consent so we can contact you.";
+          return;
+        }
 
-      if (!consent) {
-        errorBox.textContent = "Please give consent so we can contact you with your results.";
-        return;
-      }
+        localStorage.setItem(
+          "mock_lead",
+          JSON.stringify({ name, email, whatsapp, consent })
+        );
 
-      const lead = { name, email, whatsapp, consent };
-      //localStorage.setItem("mock_lead", JSON.stringify(lead));
+        // NEW attempt every time
+        localStorage.setItem("mock_submission_id", "sub_" + crypto.randomUUID());
 
-      // Generate submission ID if not already present
-// Always start a NEW mock attempt (shared-laptop safe)
-localStorage.setItem("mock_submission_id", "sub_" + crypto.randomUUID());
+        // Clear old section data
+        localStorage.removeItem("mock_reading_answers");
+        localStorage.removeItem("reading_start_ts_IELTS11_R1_P1");
 
-// Overwrite lead for this attempt
-const lead = { name, email, whatsapp, consent };
-localStorage.setItem("mock_lead", JSON.stringify(lead));
-
-// Clear any previous attempt data (so students don't overwrite each other)
-localStorage.removeItem("mock_reading_answers");
-localStorage.removeItem("mock_listening_answers");
-localStorage.removeItem("mock_writing_answers");
-localStorage.removeItem("mock_speaking_meta");
-
-// Clear section timers so a previous student's timer doesn't carry over
-localStorage.removeItem("reading_start_ts_IELTS11_R1_P1"); // reading timer key you use now
-// (Add listening/writing timer keys here later when we create them)
-
-// Start test
-window.location.href = "reading.html";
-
-
-      // Start test
-      window.location.href = "reading.html";
+        // GO FORWARD
+        window.location.assign("/reading.html");
+      });
     });
   </script>
 
