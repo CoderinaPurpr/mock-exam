@@ -16,11 +16,11 @@
 
   <div class="reading-layout">
 
-    <!-- LEFT: Passage (swapped to left) -->
+    <!-- LEFT: Passage -->
     <div class="reading-panel reading-passage">
       <h2>Reading Passage 1: Nutmeg – a valuable spice</h2>
 
-      <!-- Highlighter toolbar (color choices + persistent + remove) -->
+      <!-- Highlighter toolbar -->
       <div class="highlight-toolbar">
         <button id="hlToggle" type="button">Highlight: OFF</button>
 
@@ -39,7 +39,7 @@
         <span class="hlTip">Tip: turn ON, select text to highlight. Click a highlight to remove it.</span>
       </div>
 
-      <!-- Passage in paragraphs (no PRE) -->
+      <!-- Passage -->
       <div id="passage" class="passage no-copy">
         <p>The nutmeg tree, Myristica fragrans, is a large evergreen tree native to Southeast Asia. Until the late 18th century, it only grew in one place in the world: a small group of islands in the Banda Sea, part of the Moluccas - or Spice Islands - in northeastern Indonesia. The tree is thickly branched with dense foliage of tough, dark green oval leaves, and produces small, yellow, bell-shaped flowers and pale yellow pear-shaped fruits. The fruit is encased in a fleshy husk. When the fruit is ripe, this husk splits into two halves along a ridge running the length of the fruit. Inside is a purple-brown shiny seed, 2-3 cm long by about 2 cm across, surrounded by a lacy red or crimson covering called an 'aril'. These are the sources of the two spices nutmeg and mace, the former being produced from the dried seed and the latter from the aril.</p>
 
@@ -124,6 +124,17 @@
   </div>
 
 <script>
+  // ----------------------------
+  // Guard: must start from landing page
+  // ----------------------------
+  let lead = null;
+  try { lead = JSON.parse(localStorage.getItem("mock_lead") || "null"); } catch {}
+  const submissionId = localStorage.getItem("mock_submission_id");
+
+  if (!lead || !lead.name || !lead.email || !submissionId) {
+    window.location.assign("/index.html");
+  }
+
   // ----------------------------
   // Timer (persists across refresh)
   // ----------------------------
@@ -319,7 +330,7 @@
   }
 
   // ----------------------------
-  // Collect answers + submit (no token, no results screen)
+  // Collect answers + submit (no results screen)
   // ----------------------------
   function getRadio(name) {
     const el = document.querySelector(`input[name="${name}"]:checked`);
@@ -353,19 +364,14 @@
       return;
     }
 
-    // Require lead from landing page
-    let lead = null;
-    try { lead = JSON.parse(localStorage.getItem("mock_lead") || "null"); } catch {}
-    if (!lead || !lead.name || !lead.email) {
+    // Re-read lead/submission_id (in case storage got updated)
+    let leadNow = null;
+    try { leadNow = JSON.parse(localStorage.getItem("mock_lead") || "null"); } catch {}
+    const submissionIdNow = localStorage.getItem("mock_submission_id");
+
+    if (!leadNow || !leadNow.name || !leadNow.email || !submissionIdNow) {
       msg.textContent = "Missing lead details. Please start from the home page.";
       return;
-    }
-
-    // Require submission id
-    let submissionId = localStorage.getItem("mock_submission_id");
-    if (!submissionId) {
-      submissionId = "sub_" + crypto.randomUUID();
-      localStorage.setItem("mock_submission_id", submissionId);
     }
 
     const answers = collectAnswers();
@@ -375,7 +381,6 @@
       return;
     }
 
-    // Save locally (optional, but useful for later sections)
     localStorage.setItem("mock_reading_answers", JSON.stringify({
       test_id: "IELTS11_R1_P1",
       seconds_left: remaining,
@@ -383,20 +388,17 @@
       answers
     }));
 
-    // Submit to backend
     try {
       const payload = {
-        submission_id: submissionId,
-        lead,
+        submission_id: submissionIdNow,
+        lead: leadNow,
         answers: {
           reading: {
             test_id: "IELTS11_R1_P1",
             seconds_left: remaining,
             duration_seconds: TOTAL_SECONDS,
             answers
-          },
-          listening: {},
-          writing: {}
+          }
         }
       };
 
@@ -420,8 +422,7 @@
     // Clear timer only AFTER successful submit
     localStorage.removeItem(TIMER_KEY);
 
-    // No results screen
-    window.location.href = "thank-you.html";
+    window.location.href = "/thank-you.html";
   });
 </script>
 
