@@ -399,115 +399,298 @@ function initTwoPickGroup(groupName, outId1, outId2) {
   boxes.forEach(b => b.addEventListener("change", () => update(b)));
 }
 
+  // --- Add these helpers near escapeHtml() ---
 
-
-function renderQuestions() {
-  qMsg.textContent = "";
-  const p = currentPassage();
-
-  questionsTitle.textContent = `Questions (Passage ${p.id})`;
-
-  // Build HTML based on question types (starting with Passage 2 needs)
-  let html = "";
-
-  // Passage 2 instruction blocks (exactly like the screenshot)
-  if (p.id === 2) {
-    html += `
-      <div class="qblock">
-        <h3>Questions 14–18</h3>
-        <div class="qnote">
-          Reading Passage 2 has seven sections, <strong>A–G</strong>.<br>
-          Which section contains the following information?<br><br>
-          Write the correct letter, <strong>A–G</strong>, in boxes 14–18 on your answer sheet.
-        </div>
-        ${p.questions.filter(q => q.type === "section_match").map(q => `
-          <div class="match-row">
-            <div>
-              <input type="text" id="q${q.number}" maxlength="1" placeholder="A–G">
-            </div>
-            <div><strong>${q.number}</strong> ${escapeHtml(q.prompt)}</div>
-          </div>
-        `).join("")}
+  function renderInlineBlank(num, before, after, placeholder) {
+    return `
+      <div class="q">
+        <p style="margin:0; line-height:1.55;">
+          <strong>${num}</strong>) ${escapeHtml(before)}
+          <input type="text" id="q${num}" placeholder="${escapeHtml(placeholder || "one word")}">
+          ${escapeHtml(after || "")}
+        </p>
       </div>
-
-      <hr>
-
-      <div class="qblock">
-        <h3>Questions 19–22</h3>
-        <div class="qnote">
-          Complete the summary below.<br>
-          Choose <strong>NO MORE THAN TWO WORDS</strong> from the passage for each answer.<br>
-          Write your answers in boxes 19–22 on your answer sheet.
-        </div>
-
-        <div class="summarybox">
-          <p style="font-weight:800; margin-bottom:10px;">The impact of driverless cars</p>
-
-          ${renderSummaryLine(p, 19)}
-          ${renderSummaryLine(p, 20)}
-          <p style="margin-top:12px;"></p>
-          ${renderSummaryLine(p, 21)}
-          ${renderSummaryLine(p, 22)}
-
-          <p style="margin-top:12px;">
-            This would lead to a higher turnover of vehicles, and therefore no reduction in automotive manufacturing.
-          </p>
-        </div>
-      </div>
-
-      <hr>
-
-      ${renderTwoPickBlock(p, 23, 24, "Questions 23 and 24", "Choose <strong>TWO</strong> letters, <strong>A–E</strong>.<br>Write the correct letters in boxes 23 and 24 on your answer sheet.")}
-      <hr>
-      ${renderTwoPickBlock(p, 25, 26, "Questions 25 and 26", "Choose <strong>TWO</strong> letters, <strong>A–E</strong>.<br>Write the correct letters in boxes 25 and 26 on your answer sheet.")}
     `;
-  } else {
-    // Keep your old simple fallback for other passages (unchanged)
-    html = p.questions.map(q => {
-      return `
-        <div class="q">
-          <label>
-            <strong>${q.number}</strong> ${q.prompt}
-            <br>
-            <input type="text" id="q${q.number}" placeholder="${q.placeholder || "Answer"}">
-          </label>
-        </div>
-      `;
-    }).join("");
   }
 
-  questionsEl.innerHTML = html;
+  function renderTfng(num, statement) {
+    const name = `q${num}`;
+    return `
+      <div class="q">
+        <p style="margin:0 0 8px; line-height:1.55;">
+          <strong>${num}</strong>) ${escapeHtml(statement)}
+        </p>
 
-  // Restore answers for this passage
-  restorePassageAnswers(p.id);
+        <label style="display:block; margin:4px 0;">
+          <input type="radio" name="${name}" value="TRUE"> TRUE
+        </label>
+        <label style="display:block; margin:4px 0;">
+          <input type="radio" name="${name}" value="FALSE"> FALSE
+        </label>
+        <label style="display:block; margin:4px 0;">
+          <input type="radio" name="${name}" value="NOT GIVEN"> NOT GIVEN
+        </label>
+      </div>
+    `;
+  }
 
-  // Bind autosave for Passage 2 controls
-  if (p.id === 2) {
-    // Text inputs
-    p.questions.forEach(q => {
-      const el = document.getElementById(`q${q.number}`);
-      if (el && el.tagName === "INPUT") {
-        el.addEventListener("input", () => saveCurrentPassageAnswers());
+  // --- Replace renderQuestions() with this version ---
+  function renderQuestions() {
+    qMsg.textContent = "";
+    const p = currentPassage();
+
+    questionsTitle.textContent = `Questions (Passage ${p.id})`;
+
+    let html = "";
+
+    // =========================
+    // PASSAGE 1 — Full IELTS layout
+    // =========================
+    if (p.id === 1) {
+      html += `
+        <div class="qblock">
+          <h3>Questions 1–4</h3>
+          <div class="qnote">
+            Complete the notes below. Choose <strong>ONE WORD ONLY</strong> from the passage.
+          </div>
+
+          ${renderInlineBlank(1, "The leaves of the tree are", "", "one word")}
+          ${renderInlineBlank(2, "The", "surrounds the fruit and breaks open when the fruit is ripe.", "one word")}
+          ${renderInlineBlank(3, "The", "is used to produce the spice nutmeg.", "one word")}
+          ${renderInlineBlank(4, "The covering known as the aril is used to produce", "", "one word")}
+        </div>
+
+        <hr>
+
+        <div class="qblock">
+          <h3>Questions 5–7</h3>
+          <div class="qnote">
+            Do the following statements agree with the information given in Reading Passage 1?<br>
+            In boxes 5–7 on your answer sheet, write:<br><br>
+            <strong>TRUE</strong> if the statement agrees with the information<br>
+            <strong>FALSE</strong> if the statement contradicts the information<br>
+            <strong>NOT GIVEN</strong> if there is no information on this
+          </div>
+
+          ${renderTfng(5, "In the Middle Ages, most Europeans knew where nutmeg was grown.")}
+          ${renderTfng(6, "The VOC was the world's first major trading company.")}
+          ${renderTfng(7, "Following the Treaty of Breda, the Dutch had control of all the islands where nutmeg grew.")}
+        </div>
+
+        <hr>
+
+        <div class="qblock">
+          <h3>Questions 8–13</h3>
+          <div class="qnote">
+            Complete the table below.<br>
+            Choose <strong>ONE WORD ONLY</strong> from the passage for each answer.
+          </div>
+
+          ${renderInlineBlank(8, "Nutmeg was brought to Europe by the", ".", "one word")}
+          ${renderInlineBlank(9, "Demand grew as it was believed effective against the disease known as the", ".", "one word")}
+          ${renderInlineBlank(10, "The Dutch put", "on nutmeg to avoid it being cultivated elsewhere.", "one word")}
+          ${renderInlineBlank(11, "The Dutch finally obtained the island of", ".", "one word")}
+          ${renderInlineBlank(12, "Nutmeg plants were secretly taken to", ".", "one word")}
+          ${renderInlineBlank(13, "Half the plantations were destroyed by a", ".", "one word")}
+        </div>
+      `;
+    }
+
+    // =========================
+    // PASSAGE 2 — your existing custom layout
+    // =========================
+    else if (p.id === 2) {
+      html += `
+        <div class="qblock">
+          <h3>Questions 14–18</h3>
+          <div class="qnote">
+            Reading Passage 2 has seven sections, <strong>A–G</strong>.<br>
+            Which section contains the following information?<br><br>
+            Write the correct letter, <strong>A–G</strong>, in boxes 14–18 on your answer sheet.
+          </div>
+          ${p.questions.filter(q => q.type === "section_match").map(q => `
+            <div class="match-row">
+              <div>
+                <input type="text" id="q${q.number}" maxlength="1" placeholder="A–G">
+              </div>
+              <div><strong>${q.number}</strong> ${escapeHtml(q.prompt)}</div>
+            </div>
+          `).join("")}
+        </div>
+
+        <hr>
+
+        <div class="qblock">
+          <h3>Questions 19–22</h3>
+          <div class="qnote">
+            Complete the summary below.<br>
+            Choose <strong>NO MORE THAN TWO WORDS</strong> from the passage for each answer.<br>
+            Write your answers in boxes 19–22 on your answer sheet.
+          </div>
+
+          <div class="summarybox">
+            <p style="font-weight:800; margin-bottom:10px;">The impact of driverless cars</p>
+
+            ${renderSummaryLine(p, 19)}
+            ${renderSummaryLine(p, 20)}
+            <p style="margin-top:12px;"></p>
+            ${renderSummaryLine(p, 21)}
+            ${renderSummaryLine(p, 22)}
+
+            <p style="margin-top:12px;">
+              This would lead to a higher turnover of vehicles, and therefore no reduction in automotive manufacturing.
+            </p>
+          </div>
+        </div>
+
+        <hr>
+
+        ${renderTwoPickBlock(p, 23, 24, "Questions 23 and 24",
+          "Choose <strong>TWO</strong> letters, <strong>A–E</strong>.<br>Write the correct letters in boxes 23 and 24 on your answer sheet.")}
+        <hr>
+        ${renderTwoPickBlock(p, 25, 26, "Questions 25 and 26",
+          "Choose <strong>TWO</strong> letters, <strong>A–E</strong>.<br>Write the correct letters in boxes 25 and 26 on your answer sheet.")}
+      `;
+    }
+
+    // =========================
+    // Fallback (Passage 3 for now)
+    // =========================
+    else {
+      html = (p.questions || []).map(q => {
+        return `
+          <div class="q">
+            <label>
+              <strong>${q.number}</strong> ${escapeHtml(q.prompt)}
+              <br>
+              <input type="text" id="q${q.number}" placeholder="${escapeHtml(q.placeholder || "Answer")}">
+            </label>
+          </div>
+        `;
+      }).join("");
+    }
+
+    questionsEl.innerHTML = html;
+
+    // Restore answers for this passage
+    restorePassageAnswers(p.id);
+
+    // Autosave bindings
+    if (p.id === 2) {
+      // Text inputs
+      (p.questions || []).forEach(q => {
+        const el = document.getElementById(`q${q.number}`);
+        if (el && el.tagName === "INPUT") el.addEventListener("input", saveCurrentPassageAnswers);
+      });
+
+      // Two-pick checkboxes
+      initTwoPickGroup("tp_23_24", "q23", "q24");
+      initTwoPickGroup("tp_25_26", "q25", "q26");
+    } else if (p.id === 1) {
+      // Passage 1 text inputs
+      [1,2,3,4,8,9,10,11,12,13].forEach(n => {
+        const el = document.getElementById(`q${n}`);
+        if (el) el.addEventListener("input", saveCurrentPassageAnswers);
+      });
+
+      // Passage 1 radios (5–7)
+      [5,6,7].forEach(n => {
+        document.querySelectorAll(`input[name="q${n}"]`).forEach(r => {
+          r.addEventListener("change", saveCurrentPassageAnswers);
+        });
+      });
+    } else {
+      (p.questions || []).forEach(q => {
+        const el = document.getElementById(`q${q.number}`);
+        if (el) el.addEventListener("input", saveCurrentPassageAnswers);
+      });
+    }
+
+    // Prev/Next buttons state
+    const st = loadState();
+    prevBtn.disabled = st.currentPassageIdx === 0;
+    nextBtn.disabled = st.currentPassageIdx === (TEST.passages.length - 1);
+  }
+
+  // --- Replace restorePassageAnswers() with this version ---
+  function restorePassageAnswers(passageId) {
+    const a = loadAnswers();
+    const slot = a.passages[String(passageId)];
+    const saved = slot && slot.answers ? slot.answers : {};
+
+    Object.keys(saved).forEach(id => {
+      const val = saved[id];
+
+      // Text inputs
+      const el = document.getElementById(id);
+      if (el && el.tagName === "INPUT" && el.type === "text") {
+        el.value = val;
+        return;
+      }
+
+      // Radios (store under "q5", "q6", etc.)
+      const m = /^q(\d+)$/.exec(id);
+      if (m) {
+        const name = id; // "q5"
+        const target = document.querySelector(`input[name="${name}"][value="${String(val).toUpperCase()}"]`);
+        if (target) target.checked = true;
       }
     });
 
-    // Two-pick checkboxes (auto-fill boxes + enforce exactly 2)
-    initTwoPickGroup("tp_23_24", "q23", "q24");
-    initTwoPickGroup("tp_25_26", "q25", "q26");
-  } else {
-    // Your old autosave for fallback
-    p.questions.forEach(q => {
-      const el = document.getElementById(`q${q.number}`);
-      if (!el) return;
-      el.addEventListener("input", () => saveCurrentPassageAnswers());
-    });
+    // Restore Passage 2 two-pick checkboxes (based on q23/q24 etc.)
+    function restoreTwoPick(groupName, q1, q2) {
+      const v1 = (saved[`q${q1}`] || "").trim().toUpperCase();
+      const v2 = (saved[`q${q2}`] || "").trim().toUpperCase();
+
+      document.querySelectorAll(`input[name="${groupName}"]`).forEach(b => (b.checked = false));
+      [v1, v2].filter(Boolean).forEach(letter => {
+        const box = document.querySelector(`input[name="${groupName}"][value="${letter}"]`);
+        if (box) box.checked = true;
+      });
+    }
+
+    if (passageId === 2) {
+      restoreTwoPick("tp_23_24", 23, 24);
+      restoreTwoPick("tp_25_26", 25, 26);
+    }
   }
 
-  // Prev/Next buttons state
-  const st = loadState();
-  prevBtn.disabled = st.currentPassageIdx === 0;
-  nextBtn.disabled = st.currentPassageIdx === (TEST.passages.length - 1);
-}
+  // --- Replace saveCurrentPassageAnswers() with this version ---
+  function saveCurrentPassageAnswers() {
+    const p = currentPassage();
+    const a = ensurePassageSlot(p.id);
+    const slot = a.passages[String(p.id)];
+
+    const answers = {};
+
+    (p.questions || []).forEach(q => {
+      const key = `q${q.number}`;
+
+      // Text input?
+      const textEl = document.getElementById(key);
+      if (textEl && textEl.tagName === "INPUT" && textEl.type === "text") {
+        answers[key] = (textEl.value || "").trim();
+        return;
+      }
+
+      // Radio group?
+      const checked = document.querySelector(`input[name="${key}"]:checked`);
+      if (checked) {
+        answers[key] = String(checked.value || "").trim().toUpperCase();
+      }
+    });
+
+    slot.answers = answers;
+    slot.saved_at = new Date().toISOString();
+
+    a.test_id = TEST.test_id || "IELTS_READING_T1";
+    saveAnswers(a);
+  }
+
+
+
+
+
 
 
     function renderAll() {
@@ -525,64 +708,7 @@ function renderQuestions() {
       return a;
     }
 
-function restorePassageAnswers(passageId) {
-  const a = loadAnswers();
-  const slot = a.passages[String(passageId)];
-  const saved = slot && slot.answers ? slot.answers : {};
 
-  Object.keys(saved).forEach(id => {
-    const val = saved[id];
-
-    // Text inputs (including readonly q23/q24 etc)
-    const el = document.getElementById(id);
-    if (el && el.tagName === "INPUT" && el.type === "text") {
-      el.value = val;
-      return;
-    }
-  });
-
-  // Restore two-pick checkboxes using the filled answers q23/q24 and q25/q26
-  function restoreTwoPick(groupName, q1, q2) {
-    const v1 = (saved[`q${q1}`] || "").trim().toUpperCase();
-    const v2 = (saved[`q${q2}`] || "").trim().toUpperCase();
-
-    document.querySelectorAll(`input[name="${groupName}"]`).forEach(b => b.checked = false);
-
-    [v1, v2].filter(Boolean).forEach(letter => {
-      const box = document.querySelector(`input[name="${groupName}"][value="${letter}"]`);
-      if (box) box.checked = true;
-    });
-  }
-
-  if (passageId === 2) {
-    restoreTwoPick("tp_23_24", 23, 24);
-    restoreTwoPick("tp_25_26", 25, 26);
-  }
-}
-
-
-function saveCurrentPassageAnswers() {
-  const p = currentPassage();
-  const a = ensurePassageSlot(p.id);
-  const slot = a.passages[String(p.id)];
-
-  const answers = {};
-
-  // Save all question inputs by question number
-  (p.questions || []).forEach(q => {
-    const id = `q${q.number}`;
-    const el = document.getElementById(id);
-    if (el && el.tagName === "INPUT") {
-      answers[id] = (el.value || "").trim();
-    }
-  });
-
-  slot.answers = answers;
-  slot.saved_at = new Date().toISOString();
-
-  a.test_id = TEST.test_id || "IELTS_READING_T1";
-  saveAnswers(a);
-}
 
 
     // ============================================================
