@@ -1,430 +1,683 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>IELTS Eleven - Reading Test 1 Passage 1</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IELTS Mock Exam — Reading</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <style>
+
+/* ============================================================
+   PASSAGE SECTION LETTER BLOCKS (A–G) — for Passage 2+
+   ============================================================ */
+.psec { display:flex; gap:12px; align-items:flex-start; margin: 10px 0 14px; }
+.psec-badge{
+  width: 28px; height: 28px; border-radius: 6px;
+  border:1px solid rgba(0,0,0,.25);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; flex: 0 0 auto;
+}
+.psec-body p{ margin: 0 0 10px; line-height: 1.55; }
+.psec-body p:last-child{ margin-bottom: 0; }
+
+/* ============================================================
+   QUESTION BLOCKS (match screenshot instructions)
+   ============================================================ */
+.qblock { margin: 14px 0; }
+.qblock h3 { margin: 0 0 8px; font-size: 1.05em; }
+.qnote { padding:10px 12px; border-radius:10px; background: rgba(0,0,0,.04); margin: 10px 0 12px; }
+
+.match-row{
+  display:grid;
+  grid-template-columns: 64px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0,0,0,.08);
+}
+.match-row:last-child{ border-bottom:0; }
+.match-row input[type="text"]{
+  width: 54px; padding: 6px 8px; text-transform: uppercase;
+}
+
+.summarybox{
+  border:1px solid rgba(0,0,0,.12);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: rgba(0,0,0,.02);
+}
+.summarybox p{ margin: 0 0 10px; line-height: 1.55; }
+.summarybox p:last-child{ margin-bottom:0; }
+.summarybox input[type="text"]{ max-width: 240px; }
+
+.twopick{
+  border:1px solid rgba(0,0,0,.12);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: rgba(0,0,0,.02);
+}
+.twopick label{ display:block; margin: 6px 0; }
+.twopick .ansrow{ display:flex; gap:12px; flex-wrap:wrap; margin-top: 10px; }
+.twopick .ansrow input[type="text"]{ width: 60px; padding: 6px 8px; text-transform: uppercase; }
+
+
+
+    /* ============================================================
+       SAFE HELPERS (won’t fight your style.css)
+       ============================================================ */
+    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .spacer { height: 12px; }
+    .hidden { display:none !important; }
+    .notice { padding:10px 12px; border-radius:10px; background: rgba(0,0,0,.04); }
+    .danger { color:#b00020; }
+    .small { font-size: .9em; opacity: .85; }
+    .q { margin: 10px 0; }
+    .q input[type="text"] { max-width: 380px; }
+
+    .reading-layout { display:grid; grid-template-columns: 1.2fr 1fr; gap: 14px; }
+    @media (max-width: 950px){ .reading-layout { grid-template-columns: 1fr; } }
+
+    .passage-box { border:1px solid #ddd; border-radius:10px; padding:12px; background:#fff; }
+    .passage-text { white-space: pre-wrap; line-height:1.5; }
+
+    .pill { border:1px solid #ddd; border-radius:999px; padding:6px 10px; background:#fff; }
+    .pill.active { border-color:#111; font-weight:800; }
+
+    .stickyBar { position: sticky; top: 0; z-index: 10; background: #fff; border-bottom:1px solid #eee; padding:10px 0; }
+  </style>
 </head>
+
 <body>
+  <main class="container">
 
-  <!-- Sticky timer bar -->
-  <div id="timerBox" class="reading-timer">
-    📘 IELTS Eleven - Reading Test 1 (Passage 1) —
-    Time remaining: <span id="timeLeft">23:00</span>
-  </div>
+    <!-- ============================================================
+         STICKY TOP BAR
+         ============================================================ -->
+    <div class="stickyBar">
+      <div class="row" style="justify-content:space-between;">
+        <div class="row">
+          <strong>Reading</strong>
+          <span class="small" id="testName">Loading…</span>
+        </div>
 
-  <div class="reading-layout">
-
-    <!-- LEFT: Passage -->
-    <div class="reading-panel reading-passage">
-      <h2>Reading Passage 1: Nutmeg – a valuable spice</h2>
-
-      <!-- Highlighter toolbar -->
-      <div class="highlight-toolbar">
-        <button id="hlToggle" type="button">Highlight: OFF</button>
-
-        <label class="hlColorLabel">
-          Color:
-          <select id="hlColor">
-            <option value="#fff3a3">Yellow</option>
-            <option value="#a7e3ff">Blue</option>
-            <option value="#b7f7c1">Green</option>
-            <option value="#ffc1e3">Pink</option>
-            <option value="#e0e0e0">Gray</option>
-          </select>
-        </label>
-
-        <button id="hlClear" type="button">Clear highlights</button>
-        <span class="hlTip">Tip: turn ON, select text to highlight. Click a highlight to remove it.</span>
+        <div class="row">
+          <div class="notice">
+            Time left: <strong id="timeLeft">60:00</strong>
+          </div>
+          <button id="submitBtn" class="btn" type="button">Finish Reading</button>
+        </div>
       </div>
 
-      <!-- Passage -->
-      <div id="passage" class="passage no-copy">
-        <p>The nutmeg tree, Myristica fragrans, is a large evergreen tree native to Southeast Asia. Until the late 18th century, it only grew in one place in the world: a small group of islands in the Banda Sea, part of the Moluccas - or Spice Islands - in northeastern Indonesia. The tree is thickly branched with dense foliage of tough, dark green oval leaves, and produces small, yellow, bell-shaped flowers and pale yellow pear-shaped fruits. The fruit is encased in a fleshy husk. When the fruit is ripe, this husk splits into two halves along a ridge running the length of the fruit. Inside is a purple-brown shiny seed, 2-3 cm long by about 2 cm across, surrounded by a lacy red or crimson covering called an 'aril'. These are the sources of the two spices nutmeg and mace, the former being produced from the dried seed and the latter from the aril.</p>
+      <div class="spacer"></div>
 
-        <p>Nutmeg was a highly prized and costly ingredient in European cuisine in the Middle Ages, and was used as a flavouring, medicinal, and preservative agent. Throughout this period, the Arabs were the exclusive importers of the spice to Europe. They sold nutmeg for high prices to merchants based in Venice, but they never revealed the exact location of the source of this extremely valuable commodity. The Arab-Venetian dominance of the trade finally ended in 1512, when the Portuguese reached the Banda Islands and began exploiting its precious resources.</p>
-
-        <p>Always in danger of competition from neighbouring Spain, the Portuguese began subcontracting their spice distribution to Dutch traders. Profits began to flow into the Netherlands, and the Dutch commercial fleet swiftly grew into one of the largest in the world. The Dutch quietly gained control of most of the shipping and trading of spices in Northern Europe. Then, in 1580, Portugal fell under Spanish rule, and by the end of the 16th century the Dutch found themselves locked out of the market. As prices for pepper, nutmeg, and other spices soared across Europe, they decided to fight back.</p>
-
-        <p>In 1602, Dutch merchants founded the VOC, a trading corporation better known as the Dutch East India Company. By 1617, the VOC was the richest commercial operation in the world. The company had 50,000 employees worldwide, with a private army of 30,000 men and a fleet of 200 ships. At the same time, thousands of people across Europe were dying of the plague, a highly contagious and deadly disease. Doctors were desperate for a way to stop the spread of this disease, and they decided nutmeg held the cure. Everybody wanted nutmeg, and many were willing to spare no expense to have it. Nutmeg bought for a few pennies in Indonesia could be sold for 68,000 times its original cost on the streets of London. The only problem was the short supply. And that's where the Dutch found their opportunity.</p>
-
-        <p>The Banda Islands were ruled by local sultans who insisted on maintaining a neutral trading policy towards foreign powers. This allowed them to avoid the presence of Portuguese or Spanish troops on their soil, but it also left them unprotected from other invaders. In 1621, the Dutch arrived and took over. Once securely in control of the Bandas, the Dutch went to work protecting their new investment. They concentrated all nutmeg production into a few easily guarded areas, uprooting and destroying any trees outside the plantation zones. Anyone caught growing a nutmeg seedling or carrying seeds without the proper authority was severely punished. In addition, all exported nutmeg was covered with lime to make sure there was no chance a fertile seed which could be grown elsewhere would leave the islands. There was only one obstacle to Dutch domination. One of the Banda Islands, a sliver of land called Run, only 3 km long by less than 1 km wide, was under the control of the British. After decades of fighting for control of this tiny island, the Dutch and British arrived at a compromise settlement, the Treaty of Breda, in 1667. Intent on securing their hold over every nutmeg-producing island, the Dutch offered a trade: if the British would give them the island of Run, they would in turn give Britain a distant and much less valuable island in North America. The British agreed. That other island was Manhattan, which is how New Amsterdam became New York. The Dutch now had a monopoly over the nutmeg trade which would last for another century.</p>
-
-        <p>Then, in 1770, a Frenchman named Pierre Poivre successfully smuggled nutmeg plants to safety in Mauritius, an island off the coast of Africa. Some of these were later exported to the Caribbean where they thrived, especially on the island of Grenada. Next, in 1778, a volcanic eruption in the Banda region caused a tsunami that wiped out half the nutmeg groves. Finally, in 1809, the British returned to Indonesia and seized the Banda Islands by force. They returned the islands to the Dutch in 1817, but not before transplanting hundreds of nutmeg seedlings to plantations in several locations across southern Asia. The Dutch nutmeg monopoly was over.</p>
-
-        <p>Today, nutmeg is grown in Indonesia, the Caribbean, India, Malaysia, Papua New Guinea and Sri Lanka, and world nutmeg production is estimated to average between 10,000 and 12,000 tonnes per year.</p>
-      </div>
+      <div class="row" id="passageTabs"></div>
+      <p id="topMsg" class="error" style="min-height:1.2em; margin:8px 0 0;"></p>
     </div>
 
-    <!-- RIGHT: Questions -->
-    <div class="reading-panel reading-questions">
-      <h2>Questions (1–13)</h2>
+    <div class="spacer"></div>
 
-      <p><strong>Questions 1–4</strong><br>
-      Complete the notes below. Choose <strong>ONE WORD ONLY</strong> from the passage.</p>
+    <!-- ============================================================
+         MAIN CONTENT
+         ============================================================ -->
+    <div class="reading-layout">
 
-      <div class="q">
-        <label>1) The leaves of the tree are <input type="text" id="q1" placeholder="one word"></label>
-      </div>
-      <div class="q">
-        <label>2) The <input type="text" id="q2" placeholder="one word"> surrounds the fruit and breaks open when the fruit is ripe.</label>
-      </div>
-      <div class="q">
-        <label>3) The <input type="text" id="q3" placeholder="one word"> is used to produce the spice nutmeg.</label>
-      </div>
-      <div class="q">
-        <label>4) The covering known as the aril is used to produce <input type="text" id="q4" placeholder="one word"></label>
+      <!-- LEFT: PASSAGE -->
+      <div class="card passage-box">
+        <h2 id="passageTitle">Passage</h2>
+        <div class="small" id="passageMeta"></div>
+        <div class="spacer"></div>
+        <div id="passageText" class="passage-text">Loading…</div>
       </div>
 
-      <hr>
+      <!-- RIGHT: QUESTIONS -->
+      <div class="card">
+        <h2 id="questionsTitle">Questions</h2>
+        <div id="questions"></div>
+        <p id="qMsg" class="error" style="min-height:1.2em;"></p>
 
-      <p><strong>Questions 5–7</strong><br>
-      Do the statements agree with the information? Write TRUE / FALSE / NOT GIVEN.</p>
-
-      <div class="q">
-        <p>5) In the Middle Ages, most Europeans knew where nutmeg was grown.</p>
-        <label><input type="radio" name="q5" value="TRUE"> TRUE</label><br>
-        <label><input type="radio" name="q5" value="FALSE"> FALSE</label><br>
-        <label><input type="radio" name="q5" value="NOT GIVEN"> NOT GIVEN</label>
+        <div class="spacer"></div>
+        <div class="row">
+          <button id="prevBtn" class="btn secondary" type="button">Previous Passage</button>
+          <button id="nextBtn" class="btn secondary" type="button">Next Passage</button>
+        </div>
       </div>
-
-      <div class="q">
-        <p>6) The VOC was the world's first major trading company.</p>
-        <label><input type="radio" name="q6" value="TRUE"> TRUE</label><br>
-        <label><input type="radio" name="q6" value="FALSE"> FALSE</label><br>
-        <label><input type="radio" name="q6" value="NOT GIVEN"> NOT GIVEN</label>
-      </div>
-
-      <div class="q">
-        <p>7) Following the Treaty of Breda, the Dutch had control of all the islands where nutmeg grew.</p>
-        <label><input type="radio" name="q7" value="TRUE"> TRUE</label><br>
-        <label><input type="radio" name="q7" value="FALSE"> FALSE</label><br>
-        <label><input type="radio" name="q7" value="NOT GIVEN"> NOT GIVEN</label>
-      </div>
-
-      <hr>
-
-      <p><strong>Questions 8–13</strong><br>
-      Complete the table below. Choose <strong>ONE WORD ONLY</strong> from the passage.</p>
-
-      <div class="q"><label>8) Nutmeg was brought to Europe by the <input type="text" id="q8" placeholder="one word"></label></div>
-      <div class="q"><label>9) Demand grew as it was believed effective against the disease known as the <input type="text" id="q9" placeholder="one word"></label></div>
-      <div class="q"><label>10) The Dutch put <input type="text" id="q10" placeholder="one word"> on nutmeg to avoid it being cultivated elsewhere.</label></div>
-      <div class="q"><label>11) The Dutch finally obtained the island of <input type="text" id="q11" placeholder="one word"></label></div>
-      <div class="q"><label>12) Nutmeg plants were secretly taken to <input type="text" id="q12" placeholder="one word"></label></div>
-      <div class="q"><label>13) Half the plantations were destroyed by a <input type="text" id="q13" placeholder="one word"></label></div>
-
-      <hr>
-
-      <button id="submitBtn" type="button">Submit Reading Test</button>
-      <p id="msg" class="footer"></p>
     </div>
+  </main>
 
-  </div>
-
-<script>
-  // ----------------------------
-  // Guard: must start from landing page
-  // ----------------------------
-  let lead = null;
-  try { lead = JSON.parse(localStorage.getItem("mock_lead") || "null"); } catch {}
-  const submissionId = localStorage.getItem("mock_submission_id");
-
-  if (!lead || !lead.name || !lead.email || !submissionId) {
-    window.location.assign("/index.html");
-  }
-
-  // ----------------------------
-  // Timer (persists across refresh)
-  // ----------------------------
-  const TOTAL_SECONDS = 23 * 60;
-  const TIMER_KEY = "reading_start_ts_IELTS11_R1_P1";
-
-  let startTs = localStorage.getItem(TIMER_KEY);
-  if (!startTs) {
-    startTs = Date.now();
-    localStorage.setItem(TIMER_KEY, String(startTs));
-  } else {
-    startTs = parseInt(startTs, 10);
-  }
-
-  function computeRemaining() {
-    const elapsed = Math.floor((Date.now() - startTs) / 1000);
-    return Math.max(0, TOTAL_SECONDS - elapsed);
-  }
-
-  let remaining = computeRemaining();
-
-  const timeLeftEl = document.getElementById("timeLeft");
-  const timerBox = document.getElementById("timerBox");
-  const msg = document.getElementById("msg");
-  const submitBtn = document.getElementById("submitBtn");
-
-  function showHint(text) {
-    if (!msg) return;
-    msg.textContent = text;
-    setTimeout(() => { msg.textContent = ""; }, 2500);
-  }
-
-  function renderTime() {
-    const m = Math.floor(remaining / 60).toString().padStart(2, "0");
-    const s = (remaining % 60).toString().padStart(2, "0");
-    timeLeftEl.textContent = `${m}:${s}`;
-
-    if (remaining <= 5 * 60) timerBox.classList.add("danger");
-    else if (remaining <= 10 * 60) timerBox.classList.add("warning");
-  }
-  renderTime();
-
-  const tick = setInterval(() => {
-    remaining = computeRemaining();
-    renderTime();
-
-    if (remaining <= 0) {
-      clearInterval(tick);
-      submitBtn.disabled = true;
-      msg.textContent = "Time is up. Please submit what you have.";
-    }
-  }, 1000);
-
-  // ----------------------------
-  // Best-effort block Find/Copy/Print
-  // ----------------------------
-  document.addEventListener("keydown", (e) => {
-    const key = (e.key || "").toLowerCase();
-    const isMac = navigator.platform.toUpperCase().includes("MAC");
-    const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey;
-
-    if (ctrlOrCmd && key === "f") {
-      e.preventDefault();
-      showHint("Find is disabled for this reading test.");
-      return;
-    }
-
-    if (ctrlOrCmd && key === "c") {
-      const sel = window.getSelection();
-      if (sel && sel.toString().length > 0) {
-        e.preventDefault();
-        showHint("Copy is disabled for this reading test.");
+  <script>
+    // ============================================================
+    // GUARD: must start from landing page (index.html)
+    // ============================================================
+    (function guard() {
+      let lead = null;
+      try { lead = JSON.parse(localStorage.getItem("mock_lead") || "null"); } catch {}
+      const submissionId = localStorage.getItem("mock_submission_id");
+      if (!lead || !lead.name || !lead.email || !submissionId) {
+        window.location.assign("/index.html");
       }
-      return;
+    })();
+
+    // ============================================================
+    // CONFIG (change only if you rename files)
+    // ============================================================
+    const TEST_JSON_PATH = "/reading/test-101.json"; // <-- your naming convention
+    const DEFAULT_TIME_MIN = 60;
+
+    // Storage keys (scoped per submission)
+    const submissionId = localStorage.getItem("mock_submission_id");
+    const lead = JSON.parse(localStorage.getItem("mock_lead") || "null");
+
+    const KEY = {
+      STATE: `reading_state_${submissionId}`,          // { currentPassageIdx, endTs }
+      ANSWERS: `mock_reading_answers_${submissionId}`  // { test_id, passages:{1:{answers:{}},...}, completed }
+    };
+
+    // ============================================================
+    // DOM
+    // ============================================================
+    const testName = document.getElementById("testName");
+    const topMsg = document.getElementById("topMsg");
+    const timeLeftEl = document.getElementById("timeLeft");
+
+    const passageTabs = document.getElementById("passageTabs");
+    const passageTitle = document.getElementById("passageTitle");
+    const passageMeta = document.getElementById("passageMeta");
+    const passageText = document.getElementById("passageText");
+
+    const questionsTitle = document.getElementById("questionsTitle");
+    const questionsEl = document.getElementById("questions");
+    const qMsg = document.getElementById("qMsg");
+
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const submitBtn = document.getElementById("submitBtn");
+
+    // ============================================================
+    // STATE HELPERS
+    // ============================================================
+    function loadState() {
+      let s = null;
+      try { s = JSON.parse(localStorage.getItem(KEY.STATE) || "null"); } catch {}
+      if (!s || typeof s !== "object") {
+        s = {
+          currentPassageIdx: 0, // 0-based index
+          endTs: 0
+        };
+        saveState(s);
+      }
+      return s;
     }
 
-    if (ctrlOrCmd && key === "p") {
-      e.preventDefault();
-      showHint("Printing is disabled for this reading test.");
+    function saveState(s) {
+      localStorage.setItem(KEY.STATE, JSON.stringify(s));
+    }
+
+    function loadAnswers() {
+      let a = null;
+      try { a = JSON.parse(localStorage.getItem(KEY.ANSWERS) || "null"); } catch {}
+      if (!a || typeof a !== "object") {
+        a = { test_id: "", passages: {}, completed: false };
+        localStorage.setItem(KEY.ANSWERS, JSON.stringify(a));
+      }
+      return a;
+    }
+
+    function saveAnswers(a) {
+      localStorage.setItem(KEY.ANSWERS, JSON.stringify(a));
+    }
+
+    function nowMs(){ return Date.now(); }
+
+    // ============================================================
+    // TIMER (simple 60-min reading timer)
+    // ============================================================
+    let timerTick = null;
+
+    function startTimerIfNeeded(minutes) {
+      const st = loadState();
+      if (!st.endTs) {
+        st.endTs = nowMs() + (minutes * 60 * 1000);
+        saveState(st);
+      }
+      if (timerTick) clearInterval(timerTick);
+      timerTick = setInterval(renderTimeLeft, 250);
+      renderTimeLeft();
+    }
+
+    function renderTimeLeft() {
+      const st = loadState();
+      const remaining = Math.max(0, Math.floor((st.endTs - nowMs()) / 1000));
+      const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
+      const ss = String(remaining % 60).padStart(2, "0");
+      timeLeftEl.textContent = `${mm}:${ss}`;
+      if (remaining <= 60) timeLeftEl.classList.add("danger");
+      else timeLeftEl.classList.remove("danger");
+    }
+
+    // ============================================================
+    // LOAD TEST JSON
+    // ============================================================
+    let TEST = null; // loaded JSON
+
+    async function loadTest() {
+      topMsg.textContent = "";
+      try {
+        const res = await fetch(TEST_JSON_PATH, { cache: "no-store" });
+        if (!res.ok) throw new Error(await res.text());
+        TEST = await res.json();
+      } catch (e) {
+        console.error(e);
+        topMsg.textContent = "Could not load the reading test JSON. Check the file path and JSON syntax.";
+        return false;
+      }
+      return true;
+    }
+
+    // ============================================================
+    // RENDER UI
+    // ============================================================
+    function currentPassage() {
+      const st = loadState();
+      return TEST.passages[st.currentPassageIdx];
+    }
+
+    function renderTabs() {
+      passageTabs.innerHTML = "";
+      const st = loadState();
+
+      TEST.passages.forEach((p, idx) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "pill" + (idx === st.currentPassageIdx ? " active" : "");
+        b.textContent = `Passage ${p.id}`;
+        b.addEventListener("click", () => {
+          // Save current passage answers before switching
+          saveCurrentPassageAnswers();
+          st.currentPassageIdx = idx;
+          saveState(st);
+          renderAll();
+        });
+        passageTabs.appendChild(b);
+      });
+    }
+
+function renderPassage() {
+  const p = currentPassage();
+  passageTitle.textContent = `Reading Passage ${p.id}: ${p.title}`;
+  passageMeta.textContent = p.subtitle ? p.subtitle : "";
+
+  // If passage has A–G sections, render nicely (fixes Passage 2 typography)
+  if (Array.isArray(p.sections) && p.sections.length) {
+    passageText.innerHTML = p.sections.map(sec => {
+      const paras = (sec.paragraphs || []).map(t => `<p>${escapeHtml(t)}</p>`).join("");
+      return `
+        <div class="psec">
+          <div class="psec-badge">${escapeHtml(sec.letter || "")}</div>
+          <div class="psec-body">${paras}</div>
+        </div>
+      `;
+    }).join("");
+    return;
+  }
+
+  // Default: plain text
+  passageText.textContent = p.text || "";
+}
+
+function escapeHtml(str) {
+  return String(str || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function renderSummaryLine(p, qNum) {
+  const q = p.questions.find(x => x.number === qNum);
+  if (!q) return "";
+  return `
+    <p>
+      ${escapeHtml(q.prompt)}
+      <strong>${qNum}</strong>
+      <input type="text" id="q${qNum}" placeholder="${escapeHtml(q.placeholder || "NO MORE THAN TWO WORDS")}">
+      ${escapeHtml(q.after || "")}
+    </p>
+  `;
+}
+
+function renderTwoPickBlock(p, qA, qB, heading, noteHtml) {
+  const q = p.questions.find(x => x.number === qA && x.type === "two_pick");
+  if (!q) return "";
+
+  const groupName = (qA === 23) ? "tp_23_24" : "tp_25_26";
+
+  const opts = (q.options || []).map(([letter, text]) => {
+    return `<label><input type="checkbox" name="${groupName}" value="${escapeHtml(letter)}"> <strong>${escapeHtml(letter)}</strong> ${escapeHtml(text)}</label>`;
+  }).join("");
+
+  return `
+    <div class="qblock">
+      <h3>${escapeHtml(heading)}</h3>
+      <div class="qnote">${noteHtml}</div>
+
+      <div class="twopick">
+        <p style="font-weight:800; margin:0 0 10px;">${escapeHtml(q.prompt)}</p>
+        ${opts}
+
+        <div class="ansrow">
+          <label><strong>${qA}</strong> <input type="text" id="q${qA}" placeholder="A–E" readonly></label>
+          <label><strong>${qB}</strong> <input type="text" id="q${qB}" placeholder="A–E" readonly></label>
+        </div>
+
+        <div class="small" style="margin-top:6px;">Pick exactly 2 options (auto-fills ${qA} and ${qB}).</div>
+      </div>
+    </div>
+  `;
+}
+
+function initTwoPickGroup(groupName, outId1, outId2) {
+  const boxes = Array.from(document.querySelectorAll(`input[name="${groupName}"]`));
+  const out1 = document.getElementById(outId1);
+  const out2 = document.getElementById(outId2);
+  if (!boxes.length || !out1 || !out2) return;
+
+  function update(changedBox) {
+    const checked = boxes.filter(b => b.checked).map(b => b.value);
+
+    // Prevent selecting more than 2
+    if (checked.length > 2 && changedBox) changedBox.checked = false;
+
+    const picked = boxes.filter(b => b.checked).map(b => b.value);
+    out1.value = picked[0] || "";
+    out2.value = picked[1] || "";
+
+    saveCurrentPassageAnswers();
+  }
+
+  boxes.forEach(b => b.addEventListener("change", () => update(b)));
+}
+
+
+
+function renderQuestions() {
+  qMsg.textContent = "";
+  const p = currentPassage();
+
+  questionsTitle.textContent = `Questions (Passage ${p.id})`;
+
+  // Build HTML based on question types (starting with Passage 2 needs)
+  let html = "";
+
+  // Passage 2 instruction blocks (exactly like the screenshot)
+  if (p.id === 2) {
+    html += `
+      <div class="qblock">
+        <h3>Questions 14–18</h3>
+        <div class="qnote">
+          Reading Passage 2 has seven sections, <strong>A–G</strong>.<br>
+          Which section contains the following information?<br><br>
+          Write the correct letter, <strong>A–G</strong>, in boxes 14–18 on your answer sheet.
+        </div>
+        ${p.questions.filter(q => q.type === "section_match").map(q => `
+          <div class="match-row">
+            <div>
+              <input type="text" id="q${q.number}" maxlength="1" placeholder="A–G">
+            </div>
+            <div><strong>${q.number}</strong> ${escapeHtml(q.prompt)}</div>
+          </div>
+        `).join("")}
+      </div>
+
+      <hr>
+
+      <div class="qblock">
+        <h3>Questions 19–22</h3>
+        <div class="qnote">
+          Complete the summary below.<br>
+          Choose <strong>NO MORE THAN TWO WORDS</strong> from the passage for each answer.<br>
+          Write your answers in boxes 19–22 on your answer sheet.
+        </div>
+
+        <div class="summarybox">
+          <p style="font-weight:800; margin-bottom:10px;">The impact of driverless cars</p>
+
+          ${renderSummaryLine(p, 19)}
+          ${renderSummaryLine(p, 20)}
+          <p style="margin-top:12px;"></p>
+          ${renderSummaryLine(p, 21)}
+          ${renderSummaryLine(p, 22)}
+
+          <p style="margin-top:12px;">
+            This would lead to a higher turnover of vehicles, and therefore no reduction in automotive manufacturing.
+          </p>
+        </div>
+      </div>
+
+      <hr>
+
+      ${renderTwoPickBlock(p, 23, 24, "Questions 23 and 24", "Choose <strong>TWO</strong> letters, <strong>A–E</strong>.<br>Write the correct letters in boxes 23 and 24 on your answer sheet.")}
+      <hr>
+      ${renderTwoPickBlock(p, 25, 26, "Questions 25 and 26", "Choose <strong>TWO</strong> letters, <strong>A–E</strong>.<br>Write the correct letters in boxes 25 and 26 on your answer sheet.")}
+    `;
+  } else {
+    // Keep your old simple fallback for other passages (unchanged)
+    html = p.questions.map(q => {
+      return `
+        <div class="q">
+          <label>
+            <strong>${q.number}</strong> ${q.prompt}
+            <br>
+            <input type="text" id="q${q.number}" placeholder="${q.placeholder || "Answer"}">
+          </label>
+        </div>
+      `;
+    }).join("");
+  }
+
+  questionsEl.innerHTML = html;
+
+  // Restore answers for this passage
+  restorePassageAnswers(p.id);
+
+  // Bind autosave for Passage 2 controls
+  if (p.id === 2) {
+    // Text inputs
+    p.questions.forEach(q => {
+      const el = document.getElementById(`q${q.number}`);
+      if (el && el.tagName === "INPUT") {
+        el.addEventListener("input", () => saveCurrentPassageAnswers());
+      }
+    });
+
+    // Two-pick checkboxes (auto-fill boxes + enforce exactly 2)
+    initTwoPickGroup("tp_23_24", "q23", "q24");
+    initTwoPickGroup("tp_25_26", "q25", "q26");
+  } else {
+    // Your old autosave for fallback
+    p.questions.forEach(q => {
+      const el = document.getElementById(`q${q.number}`);
+      if (!el) return;
+      el.addEventListener("input", () => saveCurrentPassageAnswers());
+    });
+  }
+
+  // Prev/Next buttons state
+  const st = loadState();
+  prevBtn.disabled = st.currentPassageIdx === 0;
+  nextBtn.disabled = st.currentPassageIdx === (TEST.passages.length - 1);
+}
+
+
+    function renderAll() {
+      renderTabs();
+      renderPassage();
+      renderQuestions();
+    }
+
+    // ============================================================
+    // ANSWERS SAVE / RESTORE
+    // ============================================================
+    function ensurePassageSlot(passageId) {
+      const a = loadAnswers();
+      if (!a.passages[String(passageId)]) a.passages[String(passageId)] = { answers: {} };
+      return a;
+    }
+
+function restorePassageAnswers(passageId) {
+  const a = loadAnswers();
+  const slot = a.passages[String(passageId)];
+  const saved = slot && slot.answers ? slot.answers : {};
+
+  Object.keys(saved).forEach(id => {
+    const val = saved[id];
+
+    // Text inputs (including readonly q23/q24 etc)
+    const el = document.getElementById(id);
+    if (el && el.tagName === "INPUT" && el.type === "text") {
+      el.value = val;
       return;
     }
   });
 
-  const passageEl = document.getElementById("passage");
-  if (passageEl) {
-    passageEl.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-      showHint("Copy is disabled for this reading test.");
-    });
-    passageEl.addEventListener("copy", (e) => { e.preventDefault(); showHint("Copy is disabled."); });
-    passageEl.addEventListener("cut", (e) => { e.preventDefault(); showHint("Copy is disabled."); });
-  }
+  // Restore two-pick checkboxes using the filled answers q23/q24 and q25/q26
+  function restoreTwoPick(groupName, q1, q2) {
+    const v1 = (saved[`q${q1}`] || "").trim().toUpperCase();
+    const v2 = (saved[`q${q2}`] || "").trim().toUpperCase();
 
-  // ----------------------------
-  // Highlighter (persistent)
-  // ----------------------------
-  let highlightOn = false;
-  const hlToggle = document.getElementById("hlToggle");
-  const hlClear = document.getElementById("hlClear");
-  const hlColor = document.getElementById("hlColor");
+    document.querySelectorAll(`input[name="${groupName}"]`).forEach(b => b.checked = false);
 
-  const HIGHLIGHT_STORE_KEY = "reading_highlights_IELTS11_R1_P1";
-  const COLOR_STORE_KEY = "reading_highlight_color_IELTS11_R1_P1";
-
-  function saveHighlightsToStorage() {
-    if (!passageEl) return;
-    localStorage.setItem(HIGHLIGHT_STORE_KEY, passageEl.innerHTML);
-  }
-
-  function restoreHighlightsFromStorage() {
-    if (!passageEl) return;
-    const saved = localStorage.getItem(HIGHLIGHT_STORE_KEY);
-    if (saved) passageEl.innerHTML = saved;
-  }
-
-  function unwrapMark(markEl) {
-    const parent = markEl.parentNode;
-    while (markEl.firstChild) parent.insertBefore(markEl.firstChild, markEl);
-    parent.removeChild(markEl);
-    parent.normalize();
-  }
-
-  function clearAllHighlights() {
-    if (!passageEl) return;
-    passageEl.querySelectorAll("mark.hl").forEach(unwrapMark);
-    localStorage.removeItem(HIGHLIGHT_STORE_KEY);
-  }
-
-  restoreHighlightsFromStorage();
-
-  (function initHighlightColor() {
-    if (!hlColor) return;
-    const saved = localStorage.getItem(COLOR_STORE_KEY);
-    if (saved) hlColor.value = saved;
-    document.documentElement.style.setProperty("--hl-color", hlColor.value);
-  })();
-
-  if (hlColor) {
-    hlColor.addEventListener("change", () => {
-      localStorage.setItem(COLOR_STORE_KEY, hlColor.value);
-      document.documentElement.style.setProperty("--hl-color", hlColor.value);
+    [v1, v2].filter(Boolean).forEach(letter => {
+      const box = document.querySelector(`input[name="${groupName}"][value="${letter}"]`);
+      if (box) box.checked = true;
     });
   }
 
-  if (hlToggle) {
-    hlToggle.addEventListener("click", () => {
-      highlightOn = !highlightOn;
-      hlToggle.textContent = highlightOn ? "Highlight: ON" : "Highlight: OFF";
-    });
+  if (passageId === 2) {
+    restoreTwoPick("tp_23_24", 23, 24);
+    restoreTwoPick("tp_25_26", 25, 26);
   }
+}
 
-  if (passageEl) {
-    passageEl.addEventListener("click", (e) => {
-      const mark = e.target.closest && e.target.closest("mark.hl");
-      if (!mark) return;
-      unwrapMark(mark);
-      saveHighlightsToStorage();
-    });
-  }
 
-  if (passageEl) {
-    passageEl.addEventListener("mouseup", () => {
-      if (!highlightOn) return;
+function saveCurrentPassageAnswers() {
+  const p = currentPassage();
+  const a = ensurePassageSlot(p.id);
+  const slot = a.passages[String(p.id)];
 
-      const sel = window.getSelection();
-      const text = sel ? sel.toString().trim() : "";
-      if (!text) return;
+  const answers = {};
 
-      const range = sel.getRangeAt(0);
-
-      if (!passageEl.contains(range.commonAncestorContainer)) {
-        sel.removeAllRanges();
-        return;
-      }
-
-      const mark = document.createElement("mark");
-      mark.className = "hl";
-
-      try {
-        range.surroundContents(mark);
-        sel.removeAllRanges();
-        saveHighlightsToStorage();
-      } catch {
-        sel.removeAllRanges();
-      }
-    });
-  }
-
-  if (hlClear) {
-    hlClear.addEventListener("click", () => {
-      clearAllHighlights();
-    });
-  }
-
-  // ----------------------------
-  // Collect answers + submit (no results screen)
-  // ----------------------------
-  function getRadio(name) {
-    const el = document.querySelector(`input[name="${name}"]:checked`);
-    return el ? el.value : "";
-  }
-
-  function collectAnswers() {
-    const answers = {};
-    [1,2,3,4,8,9,10,11,12,13].forEach(n => {
-      answers[`q${n}`] = (document.getElementById(`q${n}`)?.value || "").trim();
-    });
-    answers["q5"] = getRadio("q5");
-    answers["q6"] = getRadio("q6");
-    answers["q7"] = getRadio("q7");
-    return answers;
-  }
-
-  function validateAnswered(answers) {
-    for (let i = 1; i <= 13; i++) {
-      const k = `q${i}`;
-      if (!answers[k] || answers[k].length === 0) return `Question ${i} is unanswered.`;
+  // Save all question inputs by question number
+  (p.questions || []).forEach(q => {
+    const id = `q${q.number}`;
+    const el = document.getElementById(id);
+    if (el && el.tagName === "INPUT") {
+      answers[id] = (el.value || "").trim();
     }
-    return null;
-  }
+  });
 
-  submitBtn.addEventListener("click", async () => {
-    msg.textContent = "";
+  slot.answers = answers;
+  slot.saved_at = new Date().toISOString();
 
-    if (remaining <= 0) {
-      msg.textContent = "Time is up. Please submit what you have.";
-      return;
-    }
+  a.test_id = TEST.test_id || "IELTS_READING_T1";
+  saveAnswers(a);
+}
 
-    // Re-read lead/submission_id (in case storage got updated)
-    let leadNow = null;
-    try { leadNow = JSON.parse(localStorage.getItem("mock_lead") || "null"); } catch {}
-    const submissionIdNow = localStorage.getItem("mock_submission_id");
 
-    if (!leadNow || !leadNow.name || !leadNow.email || !submissionIdNow) {
-      msg.textContent = "Missing lead details. Please start from the home page.";
-      return;
-    }
+    // ============================================================
+    // NAVIGATION
+    // ============================================================
+    prevBtn.addEventListener("click", () => {
+      const st = loadState();
+      if (st.currentPassageIdx === 0) return;
+      saveCurrentPassageAnswers();
+      st.currentPassageIdx -= 1;
+      saveState(st);
+      renderAll();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
 
-    const answers = collectAnswers();
-    const err = validateAnswered(answers);
-    if (err) {
-      msg.textContent = err;
-      return;
-    }
+    nextBtn.addEventListener("click", () => {
+      const st = loadState();
+      if (st.currentPassageIdx >= TEST.passages.length - 1) return;
+      saveCurrentPassageAnswers();
+      st.currentPassageIdx += 1;
+      saveState(st);
+      renderAll();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
 
-    localStorage.setItem("mock_reading_answers", JSON.stringify({
-      test_id: "IELTS11_R1_P1",
-      seconds_left: remaining,
-      duration_seconds: TOTAL_SECONDS,
-      answers
-    }));
+    // ============================================================
+    // SUBMIT (same pattern you used elsewhere)
+    // ============================================================
+    submitBtn.addEventListener("click", submitReadingAndGoNext);
 
-    try {
+    async function submitReadingAndGoNext() {
+      topMsg.textContent = "";
+      qMsg.textContent = "";
+
+      // Save current before submit
+      saveCurrentPassageAnswers();
+
+      const a = loadAnswers();
+      a.completed = true;
+      a.completed_at = new Date().toISOString();
+      saveAnswers(a);
+
       const payload = {
-        submission_id: submissionIdNow,
-        lead: leadNow,
+        submission_id: submissionId,
+        lead,
         answers: {
           reading: {
-            test_id: "IELTS11_R1_P1",
-            seconds_left: remaining,
-            duration_seconds: TOTAL_SECONDS,
-            answers
+            test_id: a.test_id,
+            passages: a.passages,
+            completed: true
           }
         }
       };
 
-      const res = await fetch("/api/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      try {
+        const res = await fetch("/api/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
 
-      const text = await res.text();
-      if (!res.ok) {
-        msg.textContent = "Submit failed: " + text;
+        const text = await res.text();
+        if (!res.ok) {
+          topMsg.textContent = "Submit failed: " + text;
+          return;
+        }
+      } catch (e) {
+        console.error(e);
+        topMsg.textContent = "Network error submitting. Please try again.";
         return;
       }
-    } catch (e) {
-      console.error(e);
-      msg.textContent = "Network error submitting. Please try again.";
-      return;
+
+      // Next step in your flow (change if your next page differs)
+      window.location.assign("/listening.html");
     }
 
-    // Clear timer only AFTER successful submit
-    localStorage.removeItem(TIMER_KEY);
+    // ============================================================
+    // BOOT
+    // ============================================================
+    (async function boot() {
+      const ok = await loadTest();
+      if (!ok) return;
 
-    window.location.href = "/listening.html";
-  });
-</script>
+      testName.textContent = `— ${TEST.title || "Test 1"}`;
 
+      // Ensure answers object exists and has test_id
+      const a = loadAnswers();
+      if (!a.test_id) { a.test_id = TEST.test_id || "IELTS_READING_T1"; saveAnswers(a); }
+
+      // Start timer
+      startTimerIfNeeded(TEST.time_minutes || DEFAULT_TIME_MIN);
+
+      // Render
+      renderAll();
+    })();
+  </script>
 </body>
 </html>
