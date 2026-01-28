@@ -63,6 +63,13 @@
         const whatsapp = leadWhatsApp.value.trim();
         const consent = leadConsent.checked;
         const errorBox = formError;
+		
+		const submissionId = localStorage.getItem("mock_submission_id");
+		if (submissionId && localStorage.getItem(`reading_started_${submissionId}`) === "1") {
+		  // They already started reading — send them back into the flow
+		  window.location.assign("/reading.html");
+		}
+
 
         errorBox.textContent = "";
 

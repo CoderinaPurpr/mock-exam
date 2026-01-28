@@ -105,7 +105,7 @@
           <div class="notice">
             Time left: <strong id="timeLeft">60:00</strong>
           </div>
-          <button id="submitBtn" class="btn" type="button">Finish Reading</button>
+          <button id="submitBtn" class="btn hidden" type="button">Finish Reading</button>
         </div>
       </div>
 
@@ -149,14 +149,31 @@
     // ============================================================
     // GUARD: must start from landing page (index.html)
     // ============================================================
-    (function guard() {
-      let lead = null;
-      try { lead = JSON.parse(localStorage.getItem("mock_lead") || "null"); } catch {}
-      const submissionId = localStorage.getItem("mock_submission_id");
-      if (!lead || !lead.name || !lead.email || !submissionId) {
-        window.location.assign("/index.html");
-      }
-    })();
+	(function guard() {
+	  let lead = null;
+	  try { lead = JSON.parse(localStorage.getItem("mock_lead") || "null"); } catch {}
+	  const submissionId = localStorage.getItem("mock_submission_id");
+	  if (!lead || !lead.name || !lead.email || !submissionId) {
+		window.location.assign("/index.html");
+	  }
+	})();
+
+	(function blockIfCompleted() {
+	  const submissionId = localStorage.getItem("mock_submission_id");
+	  if (!submissionId) return;
+
+	  const answersKey = `mock_reading_answers_${submissionId}`;
+
+	  try {
+		const a = JSON.parse(localStorage.getItem(answersKey) || "null");
+		if (a && a.completed) {
+		  // If reading is done, force forward
+		  window.location.assign("/listening.html");
+		}
+	  } catch {}
+	})();
+
+
 
     // ============================================================
     // CONFIG (change only if you rename files)
@@ -238,6 +255,7 @@
       const st = loadState();
       if (!st.endTs) {
         st.endTs = nowMs() + (minutes * 60 * 1000);
+		localStorage.setItem(`reading_started_${submissionId}`, "1");
         saveState(st);
       }
       if (timerTick) clearInterval(timerTick);
@@ -435,257 +453,386 @@ function initTwoPickGroup(groupName, outId1, outId2) {
   }
 
   // --- Replace renderQuestions() with this version ---
-  function renderQuestions() {
-    qMsg.textContent = "";
-    const p = currentPassage();
+// --- Replace renderQuestions() with this version (fixed control flow) ---
+function renderQuestions() {
+  qMsg.textContent = "";
+  const p = currentPassage();
 
-    questionsTitle.textContent = `Questions (Passage ${p.id})`;
+  questionsTitle.textContent = `Questions (Passage ${p.id})`;
 
-    let html = "";
+  let html = "";
 
-    // =========================
-    // PASSAGE 1 — Full IELTS layout
-    // =========================
-    if (p.id === 1) {
-      html += `
-        <div class="qblock">
-          <h3>Questions 1–4</h3>
-          <div class="qnote">
-            Complete the notes below. Choose <strong>ONE WORD ONLY</strong> from the passage.
-          </div>
-
-          ${renderInlineBlank(1, "The leaves of the tree are", "", "one word")}
-          ${renderInlineBlank(2, "The", "surrounds the fruit and breaks open when the fruit is ripe.", "one word")}
-          ${renderInlineBlank(3, "The", "is used to produce the spice nutmeg.", "one word")}
-          ${renderInlineBlank(4, "The covering known as the aril is used to produce", "", "one word")}
+  // =========================
+  // PASSAGE 1 — Full IELTS layout
+  // =========================
+  if (p.id === 1) {
+    html = `
+      <div class="qblock">
+        <h3>Questions 1–4</h3>
+        <div class="qnote">
+          Complete the notes below.<br>
+          Choose <strong>ONE WORD ONLY</strong> from the passage for each answer.<br>
+          Write your answers in boxes 1–4 on your answer sheet.
         </div>
 
-        <hr>
+        ${renderInlineBlank(1, "The leaves of the tree are", "in shape", "one word")}
+        ${renderInlineBlank(2, "The", "surrounds the fruit and breaks open when the fruit is ripe", "one word")}
+        ${renderInlineBlank(3, "The", "is used to produce the spice nutmeg", "one word")}
+        ${renderInlineBlank(4, "The covering known as the aril is used to produce", "", "one word")}
+      </div>
 
-        <div class="qblock">
-          <h3>Questions 5–7</h3>
-          <div class="qnote">
-            Do the following statements agree with the information given in Reading Passage 1?<br>
-            In boxes 5–7 on your answer sheet, write:<br><br>
-            <strong>TRUE</strong> if the statement agrees with the information<br>
-            <strong>FALSE</strong> if the statement contradicts the information<br>
-            <strong>NOT GIVEN</strong> if there is no information on this
-          </div>
+      <hr>
 
-          ${renderTfng(5, "In the Middle Ages, most Europeans knew where nutmeg was grown.")}
-          ${renderTfng(6, "The VOC was the world's first major trading company.")}
-          ${renderTfng(7, "Following the Treaty of Breda, the Dutch had control of all the islands where nutmeg grew.")}
+      <div class="qblock">
+        <h3>Questions 5–7</h3>
+        <div class="qnote">
+          Do the following statements agree with the information given in Reading Passage 1?<br><br>
+          In boxes 5–7 on your answer sheet, write:<br><br>
+          <strong>TRUE</strong> if the statement agrees with the information<br>
+          <strong>FALSE</strong> if the statement contradicts the information<br>
+          <strong>NOT GIVEN</strong> if there is no information on this
         </div>
 
-        <hr>
+        ${renderTfng(5, "In the Middle Ages, most Europeans knew where nutmeg was grown.")}
+        ${renderTfng(6, "The VOC was the world's first major trading company.")}
+        ${renderTfng(7, "Following the Treaty of Breda, the Dutch had control of all the islands where nutmeg grew.")}
+      </div>
 
-        <div class="qblock">
-          <h3>Questions 8–13</h3>
-          <div class="qnote">
-            Complete the table below.<br>
-            Choose <strong>ONE WORD ONLY</strong> from the passage for each answer.
-          </div>
+      <hr>
 
-          ${renderInlineBlank(8, "Nutmeg was brought to Europe by the", ".", "one word")}
-          ${renderInlineBlank(9, "Demand grew as it was believed effective against the disease known as the", ".", "one word")}
-          ${renderInlineBlank(10, "The Dutch put", "on nutmeg to avoid it being cultivated elsewhere.", "one word")}
-          ${renderInlineBlank(11, "The Dutch finally obtained the island of", ".", "one word")}
-          ${renderInlineBlank(12, "Nutmeg plants were secretly taken to", ".", "one word")}
-          ${renderInlineBlank(13, "Half the plantations were destroyed by a", ".", "one word")}
-        </div>
-      `;
-    }
-
-    // =========================
-    // PASSAGE 2 — your existing custom layout
-    // =========================
-    else if (p.id === 2) {
-      html += `
-        <div class="qblock">
-          <h3>Questions 14–18</h3>
-          <div class="qnote">
-            Reading Passage 2 has seven sections, <strong>A–G</strong>.<br>
-            Which section contains the following information?<br><br>
-            Write the correct letter, <strong>A–G</strong>, in boxes 14–18 on your answer sheet.
-          </div>
-          ${p.questions.filter(q => q.type === "section_match").map(q => `
-            <div class="match-row">
-              <div>
-                <input type="text" id="q${q.number}" maxlength="1" placeholder="A–G">
-              </div>
-              <div><strong>${q.number}</strong> ${escapeHtml(q.prompt)}</div>
-            </div>
-          `).join("")}
+      <div class="qblock">
+        <h3>Questions 8–13</h3>
+        <div class="qnote">
+          Complete the table below.<br>
+          Choose <strong>ONE WORD ONLY</strong> from the passage for each answer.<br>
+          Write your answers in boxes 8–13 on your answer sheet.
         </div>
 
-        <hr>
+        ${renderInlineBlank(8, "Nutmeg was brought to Europe by the", "", "one word")}
+        ${renderInlineBlank(9, "Demand for nutmeg grew, as it was believed to be effective against the disease known as the", "", "one word")}
+        ${renderInlineBlank(10, "The Dutch put", "on nutmeg to avoid it being cultivated outside the islands", "one word")}
+        ${renderInlineBlank(11, "The Dutch finally obtained the island of", "from the British", "one word")}
+        ${renderInlineBlank(12, "Nutmeg plants were secretly taken to", "", "one word")}
+        ${renderInlineBlank(13, "Half the Banda Islands’ nutmeg plantations were destroyed by a", "", "one word")}
+      </div>
+    `;
+  }
 
-        <div class="qblock">
-          <h3>Questions 19–22</h3>
-          <div class="qnote">
-            Complete the summary below.<br>
-            Choose <strong>NO MORE THAN TWO WORDS</strong> from the passage for each answer.<br>
-            Write your answers in boxes 19–22 on your answer sheet.
-          </div>
-
-          <div class="summarybox">
-            <p style="font-weight:800; margin-bottom:10px;">The impact of driverless cars</p>
-
-            ${renderSummaryLine(p, 19)}
-            ${renderSummaryLine(p, 20)}
-            <p style="margin-top:12px;"></p>
-            ${renderSummaryLine(p, 21)}
-            ${renderSummaryLine(p, 22)}
-
-            <p style="margin-top:12px;">
-              This would lead to a higher turnover of vehicles, and therefore no reduction in automotive manufacturing.
-            </p>
-          </div>
+  // =========================
+  // PASSAGE 2 — your existing custom layout
+  // =========================
+  else if (p.id === 2) {
+    html = `
+      <div class="qblock">
+        <h3>Questions 14–18</h3>
+        <div class="qnote">
+          Reading Passage 2 has seven sections, <strong>A–G</strong>.<br>
+          Which section contains the following information?<br><br>
+          Write the correct letter, <strong>A–G</strong>, in boxes 14–18 on your answer sheet.
         </div>
 
-        <hr>
+        ${(p.questions || []).filter(q => q.type === "section_match").map(q => `
+          <div class="match-row">
+            <div><input type="text" id="q${q.number}" maxlength="1" placeholder="A–G"></div>
+            <div><strong>${q.number}</strong> ${escapeHtml(q.prompt)}</div>
+          </div>
+        `).join("")}
+      </div>
 
-        ${renderTwoPickBlock(p, 23, 24, "Questions 23 and 24",
-          "Choose <strong>TWO</strong> letters, <strong>A–E</strong>.<br>Write the correct letters in boxes 23 and 24 on your answer sheet.")}
-        <hr>
-        ${renderTwoPickBlock(p, 25, 26, "Questions 25 and 26",
-          "Choose <strong>TWO</strong> letters, <strong>A–E</strong>.<br>Write the correct letters in boxes 25 and 26 on your answer sheet.")}
-      `;
-    }
+      <hr>
 
-    // =========================
-    // Fallback (Passage 3 for now)
-    // =========================
-    else {
-      html = (p.questions || []).map(q => {
-        return `
+      <div class="qblock">
+        <h3>Questions 19–22</h3>
+        <div class="qnote">
+          Complete the summary below.<br>
+          Choose <strong>NO MORE THAN TWO WORDS</strong> from the passage for each answer.<br>
+          Write your answers in boxes 19–22 on your answer sheet.
+        </div>
+
+        <div class="summarybox">
+          <p style="font-weight:800; margin-bottom:10px;">The impact of driverless cars</p>
+          ${renderSummaryLine(p, 19)}
+          ${renderSummaryLine(p, 20)}
+          <p style="margin-top:12px;"></p>
+          ${renderSummaryLine(p, 21)}
+          ${renderSummaryLine(p, 22)}
+          <p style="margin-top:12px;">
+            This would lead to a higher turnover of vehicles, and therefore no reduction in automotive manufacturing.
+          </p>
+        </div>
+      </div>
+
+      <hr>
+
+      ${renderTwoPickBlock(
+        p, 23, 24,
+        "Questions 23 and 24",
+        "Choose <strong>TWO</strong> letters, <strong>A–E</strong>.<br>Write the correct letters in boxes 23 and 24 on your answer sheet."
+      )}
+
+      <hr>
+
+      ${renderTwoPickBlock(
+        p, 25, 26,
+        "Questions 25 and 26",
+        "Choose <strong>TWO</strong> letters, <strong>A–E</strong>.<br>Write the correct letters in boxes 25 and 26 on your answer sheet."
+      )}
+    `;
+  }
+
+  // =========================
+  // PASSAGE 3 — IELTS layout (Q27–40)
+  // =========================
+  else if (p.id === 3) {
+    html = `
+      <div class="q-block">
+        <h3>Questions 27–32</h3>
+        <div class="notice">
+          Choose the correct letter, <strong>A, B, C</strong> or <strong>D</strong>.<br>
+          Write the correct letter in boxes 27–32 on your answer sheet.
+        </div>
+
+        ${[
+          { n:27, t:"The writer refers to visitors to New York to illustrate the point that",
+            opts:[["A","exploration is an intrinsic element of being human."],["B","most people are enthusiastic about exploring."],["C","exploration can lead to surprising results."],["D","most people find exploration daunting."]] },
+          { n:28, t:"According to the second paragraph, what is the writer’s view of explorers?",
+            opts:[["A","Their discoveries have brought both benefits and disadvantages."],["B","Their main value is in teaching others."],["C","They act on an urge that is common to everyone."],["D","They tend to be more attracted to certain professions than to others."]] },
+          { n:29, t:"The writer refers to a description of Egdon Heath to suggest that",
+            opts:[["A","Hardy was writing about his own experience of exploration."],["B","Hardy was mistaken about the nature of exploration."],["C","Hardy’s aim was to investigate people’s emotional states."],["D","Hardy’s aim was to show the attraction of isolation."]] },
+          { n:30, t:"In the fourth paragraph, the writer refers to ‘a golden age’ to suggest that",
+            opts:[["A","the amount of useful information produced by exploration has decreased."],["B","fewer people are interested in exploring than in the 19th century."],["C","recent developments have made exploration less exciting."],["D","we are wrong to think that exploration is no longer necessary."]] },
+          { n:31, t:"In the sixth paragraph, when discussing the definition of exploration, the writer argues that",
+            opts:[["A","people tend to relate exploration to their own professional interests."],["B","certain people are likely to misunderstand the nature of exploration."],["C","the generally accepted definition has changed over time."],["D","historians and scientists have more valid definitions than the general public."]] },
+          { n:32, t:"In the last paragraph, the writer explains that he is interested in",
+            opts:[["A","how someone’s personality is reflected in their choice of places to visit."],["B","the human ability to cast new light on places that may be familiar."],["C","how travel writing has evolved to meet changing demands."],["D","the feelings that writers develop about the places that they explore."]] }
+        ].map(q => `
+          <div class="q">
+            <p><strong>${q.n}</strong> ${q.t}</p>
+            ${q.opts.map(o => `
+              <label style="display:block; margin:4px 0;">
+                <input type="radio" name="q${q.n}" value="${o[0]}">
+                <strong>${o[0]}</strong> ${o[1]}
+              </label>
+            `).join("")}
+          </div>
+        `).join("")}
+      </div>
+
+      <hr>
+
+      <div class="q-block">
+        <h3>Questions 33–37</h3>
+        <div class="notice">
+          Look at the following statements (Questions 33–37) and the list of explorers below.<br>
+          Match each statement with the correct explorer, <strong>A–E</strong>.<br>
+          Write the correct letter, A–E, in boxes 33–37 on your answer sheet.<br>
+          <strong>NB</strong> You may use any letter more than once.
+        </div>
+
+        <div class="notice" style="margin-top:10px;">
+          <strong>List of Explorers</strong><br>
+          <strong>A</strong> Peter Fleming<br>
+          <strong>B</strong> Ran Fiennes<br>
+          <strong>C</strong> Chris Bonington<br>
+          <strong>D</strong> Robin Hanbury-Tenison<br>
+          <strong>E</strong> Wilfred Thesiger
+        </div>
+
+        ${[
+          [33,"He referred to the relevance of the form of transport used."],
+          [34,"He described feelings on coming back home after a long journey."],
+          [35,"He worked for the benefit of specific groups of people."],
+          [36,"He did not consider learning about oneself an essential part of exploration."],
+          [37,"He defined exploration as being both unique and of value to others."]
+        ].map(row => `
           <div class="q">
             <label>
-              <strong>${q.number}</strong> ${escapeHtml(q.prompt)}
-              <br>
-              <input type="text" id="q${q.number}" placeholder="${escapeHtml(q.placeholder || "Answer")}">
+              <strong>${row[0]}</strong> ${row[1]}<br>
+              <input type="text" id="q${row[0]}" placeholder="A–E" style="max-width:110px; text-transform:uppercase;">
             </label>
           </div>
-        `;
-      }).join("");
-    }
+        `).join("")}
+      </div>
 
-    questionsEl.innerHTML = html;
+      <hr>
 
-    // Restore answers for this passage
-    restorePassageAnswers(p.id);
+      <div class="q-block">
+        <h3>Questions 38–40</h3>
+        <div class="notice">
+          Complete the summary below.<br>
+          Choose <strong>NO MORE THAN TWO WORDS</strong> from the passage for each answer.<br>
+          Write your answers in boxes 38–40 on your answer sheet.
+        </div>
 
-    // Autosave bindings
-    if (p.id === 2) {
-      // Text inputs
-      (p.questions || []).forEach(q => {
-        const el = document.getElementById(`q${q.number}`);
-        if (el && el.tagName === "INPUT") el.addEventListener("input", saveCurrentPassageAnswers);
-      });
+        <div class="q" style="margin-top:10px;">
+          <div class="notice" style="text-align:center; font-weight:800;">The writer’s own bias</div>
 
-      // Two-pick checkboxes
-      initTwoPickGroup("tp_23_24", "q23", "q24");
-      initTwoPickGroup("tp_25_26", "q25", "q26");
-    } else if (p.id === 1) {
-      // Passage 1 text inputs
-      [1,2,3,4,8,9,10,11,12,13].forEach(n => {
-        const el = document.getElementById(`q${n}`);
-        if (el) el.addEventListener("input", saveCurrentPassageAnswers);
-      });
-
-      // Passage 1 radios (5–7)
-      [5,6,7].forEach(n => {
-        document.querySelectorAll(`input[name="q${n}"]`).forEach(r => {
-          r.addEventListener("change", saveCurrentPassageAnswers);
-        });
-      });
-    } else {
-      (p.questions || []).forEach(q => {
-        const el = document.getElementById(`q${q.number}`);
-        if (el) el.addEventListener("input", saveCurrentPassageAnswers);
-      });
-    }
-
-    // Prev/Next buttons state
-    const st = loadState();
-    prevBtn.disabled = st.currentPassageIdx === 0;
-    nextBtn.disabled = st.currentPassageIdx === (TEST.passages.length - 1);
+          <p style="margin-top:10px; line-height:1.6;">
+            The writer has experience of a large number of <strong>38</strong>
+            <input type="text" id="q38" placeholder="1–2 words" style="max-width:220px;">
+            , and was the first stranger that certain previously <strong>39</strong>
+            <input type="text" id="q39" placeholder="1–2 words" style="max-width:220px;">
+            people had encountered. He believes there is no need for further exploration of Earth’s
+            <strong>40</strong>
+            <input type="text" id="q40" placeholder="1–2 words" style="max-width:220px;">
+            , except to answer specific questions such as how buffalo eat.
+          </p>
+        </div>
+      </div>
+    `;
   }
+
+  // =========================
+  // FALLBACK — generic
+  // =========================
+  else {
+    html = (p.questions || []).map(q => `
+      <div class="q">
+        <label>
+          <strong>${q.number}</strong> ${escapeHtml(q.prompt || "")}
+          <br>
+          <input type="text" id="q${q.number}" placeholder="${escapeHtml(q.placeholder || "Answer")}">
+        </label>
+      </div>
+    `).join("");
+  }
+
+  questionsEl.innerHTML = html;
+
+  // Restore answers for this passage
+  restorePassageAnswers(p.id);
+
+  // =========================
+  // Autosave bindings (per passage)
+  // =========================
+  if (p.id === 1) {
+    // Text inputs
+    [1,2,3,4,8,9,10,11,12,13].forEach(n => {
+      const el = document.getElementById(`q${n}`);
+      if (el) el.addEventListener("input", saveCurrentPassageAnswers);
+    });
+
+    // TFNG radios
+    [5,6,7].forEach(n => {
+      document.querySelectorAll(`input[name="q${n}"]`).forEach(r => {
+        r.addEventListener("change", saveCurrentPassageAnswers);
+      });
+    });
+  }
+  else if (p.id === 2) {
+    // Text inputs 14–22
+    (p.questions || []).forEach(q => {
+      const el = document.getElementById(`q${q.number}`);
+      if (el && el.tagName === "INPUT" && el.type === "text") {
+        el.addEventListener("input", saveCurrentPassageAnswers);
+      }
+    });
+
+    // Two-pick checkbox groups (these must match your renderTwoPickBlock() names)
+    initTwoPickGroup("tp_23_24", "q23", "q24");
+    initTwoPickGroup("tp_25_26", "q25", "q26");
+  }
+  else if (p.id === 3) {
+    // MCQ radios 27–32
+    [27,28,29,30,31,32].forEach(n => {
+      document.querySelectorAll(`input[name="q${n}"]`).forEach(r => {
+        r.addEventListener("change", saveCurrentPassageAnswers);
+      });
+    });
+
+    // Text inputs 33–40
+    [33,34,35,36,37,38,39,40].forEach(n => {
+      const el = document.getElementById(`q${n}`);
+      if (el) el.addEventListener("input", saveCurrentPassageAnswers);
+    });
+  }
+  else {
+    // Generic autosave
+    (p.questions || []).forEach(q => {
+      const el = document.getElementById(`q${q.number}`);
+      if (el && el.tagName === "INPUT") el.addEventListener("input", saveCurrentPassageAnswers);
+    });
+  }
+
+	// Prev/Next buttons state
+	const st = loadState();
+	const lastIdx = TEST.passages.length - 1;
+
+	prevBtn.disabled = (st.currentPassageIdx === 0);
+
+	// ✅ allow the button on last passage (we’ll repurpose it as Finish Reading)
+	nextBtn.disabled = false;
+
+	if (st.currentPassageIdx === lastIdx) {
+	  nextBtn.textContent = "Finish Reading";
+	} else {
+	  nextBtn.textContent = "Next Passage";
+	}
+
+  
+  // ===== Make Next button become Finish Reading on last passage =====
+  const isLast = st.currentPassageIdx === (TEST.passages.length - 1);
+  nextBtn.textContent = isLast ? "Finish Reading" : "Next Passage";
+ 
+}
+
+
+
+
 
   // --- Replace restorePassageAnswers() with this version ---
-  function restorePassageAnswers(passageId) {
-    const a = loadAnswers();
-    const slot = a.passages[String(passageId)];
-    const saved = slot && slot.answers ? slot.answers : {};
+function restorePassageAnswers(passageId) {
+  const a = loadAnswers();
+  const slot = a.passages[String(passageId)];
+  const saved = slot && slot.answers ? slot.answers : {};
 
-    Object.keys(saved).forEach(id => {
-      const val = saved[id];
+  Object.keys(saved).forEach(id => {
+    const val = saved[id];
 
-      // Text inputs
-      const el = document.getElementById(id);
-      if (el && el.tagName === "INPUT" && el.type === "text") {
-        el.value = val;
-        return;
-      }
-
-      // Radios (store under "q5", "q6", etc.)
-      const m = /^q(\d+)$/.exec(id);
-      if (m) {
-        const name = id; // "q5"
-        const target = document.querySelector(`input[name="${name}"][value="${String(val).toUpperCase()}"]`);
-        if (target) target.checked = true;
-      }
-    });
-
-    // Restore Passage 2 two-pick checkboxes (based on q23/q24 etc.)
-    function restoreTwoPick(groupName, q1, q2) {
-      const v1 = (saved[`q${q1}`] || "").trim().toUpperCase();
-      const v2 = (saved[`q${q2}`] || "").trim().toUpperCase();
-
-      document.querySelectorAll(`input[name="${groupName}"]`).forEach(b => (b.checked = false));
-      [v1, v2].filter(Boolean).forEach(letter => {
-        const box = document.querySelector(`input[name="${groupName}"][value="${letter}"]`);
-        if (box) box.checked = true;
-      });
+    // Text inputs
+    const el = document.getElementById(id);
+    if (el && el.tagName === "INPUT" && el.type === "text") {
+      el.value = val;
+      return;
     }
 
-    if (passageId === 2) {
-      restoreTwoPick("tp_23_24", 23, 24);
-      restoreTwoPick("tp_25_26", 25, 26);
+    // Radios (q27 etc)
+    const target = document.querySelector(`input[name="${id}"][value="${String(val).toUpperCase()}"]`);
+    if (target) target.checked = true;
+  });
+}
+
+function saveCurrentPassageAnswers() {
+  const p = currentPassage();
+  const a = ensurePassageSlot(p.id);
+  const slot = a.passages[String(p.id)];
+
+  const answers = {};
+
+  // Save all visible inputs in the questions panel (works for P3 + your other layouts)
+  questionsEl.querySelectorAll("input").forEach(input => {
+    if (!input.id && !input.name) return;
+
+    // text
+    if (input.type === "text" && input.id) {
+      answers[input.id] = (input.value || "").trim();
+      return;
     }
-  }
 
-  // --- Replace saveCurrentPassageAnswers() with this version ---
-  function saveCurrentPassageAnswers() {
-    const p = currentPassage();
-    const a = ensurePassageSlot(p.id);
-    const slot = a.passages[String(p.id)];
+    // radio
+    if (input.type === "radio" && input.name) {
+      if (input.checked) answers[input.name] = String(input.value || "").trim().toUpperCase();
+      return;
+    }
+  });
 
-    const answers = {};
+  slot.answers = answers;
+  slot.saved_at = new Date().toISOString();
 
-    (p.questions || []).forEach(q => {
-      const key = `q${q.number}`;
+  a.test_id = TEST.test_id || "IELTS_READING_T1";
+  saveAnswers(a);
+}
 
-      // Text input?
-      const textEl = document.getElementById(key);
-      if (textEl && textEl.tagName === "INPUT" && textEl.type === "text") {
-        answers[key] = (textEl.value || "").trim();
-        return;
-      }
-
-      // Radio group?
-      const checked = document.querySelector(`input[name="${key}"]:checked`);
-      if (checked) {
-        answers[key] = String(checked.value || "").trim().toUpperCase();
-      }
-    });
-
-    slot.answers = answers;
-    slot.saved_at = new Date().toISOString();
-
-    a.test_id = TEST.test_id || "IELTS_READING_T1";
-    saveAnswers(a);
-  }
 
 
 
@@ -724,24 +871,43 @@ function initTwoPickGroup(groupName, outId1, outId2) {
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
 
-    nextBtn.addEventListener("click", () => {
-      const st = loadState();
-      if (st.currentPassageIdx >= TEST.passages.length - 1) return;
-      saveCurrentPassageAnswers();
-      st.currentPassageIdx += 1;
-      saveState(st);
-      renderAll();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
+    nextBtn.addEventListener("click", async () => {
+     const st = loadState();
+     const isLast = st.currentPassageIdx >= TEST.passages.length - 1;
+
+    // Always save before moving on
+    saveCurrentPassageAnswers();
+
+    if (isLast) {
+      // On last passage, behave like Finish Reading
+      await submitReadingAndGoNext(); // will include confirm in step 3
+      return;
+    }
+
+    st.currentPassageIdx += 1;
+    saveState(st);
+    renderAll();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
 
     // ============================================================
     // SUBMIT (same pattern you used elsewhere)
     // ============================================================
-    submitBtn.addEventListener("click", submitReadingAndGoNext);
+    submitBtn.addEventListener("click", () => {
+     saveCurrentPassageAnswers();
+     window.location.href = "/listening.html";
+    });
+
 
     async function submitReadingAndGoNext() {
       topMsg.textContent = "";
       qMsg.textContent = "";
+	  
+	  if (!confirm("Finish Reading and proceed to Listening? You won’t be able to return to Reading.")) {
+        return;
+      }
+
 
       // Save current before submit
       saveCurrentPassageAnswers();

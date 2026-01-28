@@ -3,42 +3,318 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Writing</title>
+  <title>IELTS Mock Exam — Writing</title>
   <link rel="stylesheet" href="style.css" />
+
+  <style>
+    /* Safe helpers */
+    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .spacer { height: 12px; }
+    .hidden { display:none !important; }
+    .notice { padding:10px 12px; border-radius:10px; background: rgba(0,0,0,.04); }
+    .danger { color:#b00020; }
+    .small { font-size: .9em; opacity: .85; }
+    .stickyBar { position: sticky; top: 0; z-index: 10; background: #fff; border-bottom:1px solid #eee; padding:10px 0; }
+
+    .layout { display:grid; grid-template-columns: 1fr; gap: 14px; }
+    .task { border:1px solid #ddd; border-radius:12px; padding:14px; background:#fff; }
+    .task h2 { margin: 0 0 8px; }
+    .prompt { white-space: pre-wrap; line-height:1.5; }
+
+    textarea {
+      width: 100%;
+      min-height: 260px;
+      resize: vertical;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      font: inherit;
+      line-height: 1.5;
+    }
+
+    .metaRow { display:flex; gap:12px; flex-wrap:wrap; }
+    .pill { border:1px solid #ddd; border-radius:999px; padding:6px 10px; background:#fff; }
+  </style>
 </head>
+
 <body>
   <main class="container">
-    <h1>Writing</h1>
-    <p class="muted">MVP page — we’ll wire the full prompts/questions next.</p>
 
-    <div class="card">
-      <h2>Task 1</h2>
-      <textarea id="t1" rows="8" style="width:100%"></textarea>
+    <!-- Sticky top bar -->
+    <div class="stickyBar">
+      <div class="row" style="justify-content:space-between;">
+        <div class="row">
+          <strong>Writing</strong>
+          <span class="small" id="testName">— Test</span>
+        </div>
+
+        <div class="row">
+          <div class="notice">
+            Time left: <strong id="timeLeft">61:00</strong>
+          </div>
+          <button id="submitBtn" class="btn" type="button">Submit Writing</button>
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+      <p id="topMsg" class="error" style="min-height:1.2em; margin:8px 0 0;"></p>
     </div>
 
-    <div class="card">
-      <h2>Task 2</h2>
-      <textarea id="t2" rows="10" style="width:100%"></textarea>
-    </div>
+    <div class="spacer"></div>
 
-    <button class="btn" id="submitBtn" type="button">Submit (MVP)</button>
-    <p class="muted" id="msg"></p>
+    <div class="layout">
+      <!-- TASK 1 -->
+      <section class="task">
+        <h2>Writing Task 1</h2>
+        <div class="metaRow">
+          <span class="pill small">Recommended: ~20 minutes</span>
+          <span class="pill small" id="wc1">Words: 0</span>
+        </div>
+        <div class="spacer"></div>
+
+        <!-- TODO: Paste your Task 1 prompt below -->
+        <div class="prompt notice" id="task1Prompt">
+PASTE TASK 1 PROMPT HERE
+        </div>
+
+        <div class="spacer"></div>
+        <textarea id="task1Answer" placeholder="Type Task 1 answer here…"></textarea>
+        <p class="small">Tip: Aim for at least 150 words.</p>
+      </section>
+
+      <!-- TASK 2 -->
+      <section class="task">
+        <h2>Writing Task 2</h2>
+        <div class="metaRow">
+          <span class="pill small">Recommended: ~40 minutes</span>
+          <span class="pill small" id="wc2">Words: 0</span>
+        </div>
+        <div class="spacer"></div>
+
+        <!-- TODO: Paste your Task 2 prompt below -->
+        <div class="prompt notice" id="task2Prompt">
+PASTE TASK 2 PROMPT HERE
+        </div>
+
+        <div class="spacer"></div>
+        <textarea id="task2Answer" placeholder="Type Task 2 essay here…"></textarea>
+        <p class="small">Tip: Aim for at least 250 words.</p>
+      </section>
+    </div>
   </main>
 
-  <script type="module">
-    import { submitMvp } from "./app.js";
-
-    document.getElementById("submitBtn").addEventListener("click", async () => {
-      const msg = document.getElementById("msg");
-      msg.textContent = "Submitting...";
-      try {
-        const out = await submitMvp();
-        msg.textContent = `Server responded: ${out.status} ${out.text}`;
-        if (out.status === 200) location.href = "thank-you.html";
-      } catch (e) {
-        msg.textContent = "Error: " + (e.message || e);
+  <script>
+    // ============================================================
+    // GUARD: must start from landing page (index.html)
+    // ============================================================
+    (function guard() {
+      let lead = null;
+      try { lead = JSON.parse(localStorage.getItem("mock_lead") || "null"); } catch {}
+      const submissionId = localStorage.getItem("mock_submission_id");
+      if (!lead || !lead.name || !lead.email || !submissionId) {
+        window.location.assign("/index.html");
       }
-    });
+    })();
+
+    // ============================================================
+    // CONFIG
+    // ============================================================
+    const DEFAULT_TIME_MIN = 61;
+
+    // Storage keys (scoped per submission)
+    const submissionId = localStorage.getItem("mock_submission_id");
+    const lead = JSON.parse(localStorage.getItem("mock_lead") || "null");
+
+    const KEY = {
+      STATE: `writing_state_${submissionId}`,          // { endTs }
+      ANSWERS: `mock_writing_answers_${submissionId}` // { test_id, task1:{prompt,answer}, task2:{prompt,answer}, completed }
+    };
+
+    // ============================================================
+    // DOM
+    // ============================================================
+    const testName = document.getElementById("testName");
+    const topMsg = document.getElementById("topMsg");
+    const timeLeftEl = document.getElementById("timeLeft");
+
+    const task1PromptEl = document.getElementById("task1Prompt");
+    const task2PromptEl = document.getElementById("task2Prompt");
+    const task1AnswerEl = document.getElementById("task1Answer");
+    const task2AnswerEl = document.getElementById("task2Answer");
+    const wc1 = document.getElementById("wc1");
+    const wc2 = document.getElementById("wc2");
+
+    const submitBtn = document.getElementById("submitBtn");
+
+    // ============================================================
+    // STATE HELPERS
+    // ============================================================
+    function loadState() {
+      let s = null;
+      try { s = JSON.parse(localStorage.getItem(KEY.STATE) || "null"); } catch {}
+      if (!s || typeof s !== "object") {
+        s = { endTs: 0 };
+        saveState(s);
+      }
+      return s;
+    }
+
+    function saveState(s) {
+      localStorage.setItem(KEY.STATE, JSON.stringify(s));
+    }
+
+    function loadAnswers() {
+      let a = null;
+      try { a = JSON.parse(localStorage.getItem(KEY.ANSWERS) || "null"); } catch {}
+      if (!a || typeof a !== "object") {
+        a = {
+          test_id: "IELTS_WRITING_T1", // placeholder id
+          task1: { prompt: "", answer: "" },
+          task2: { prompt: "", answer: "" },
+          completed: false
+        };
+        localStorage.setItem(KEY.ANSWERS, JSON.stringify(a));
+      }
+      return a;
+    }
+
+    function saveAnswers(a) {
+      localStorage.setItem(KEY.ANSWERS, JSON.stringify(a));
+    }
+
+    function nowMs(){ return Date.now(); }
+
+    // ============================================================
+    // TIMER (61-min writing timer)
+    // ============================================================
+    let timerTick = null;
+
+    function startTimerIfNeeded(minutes) {
+      const st = loadState();
+      if (!st.endTs) {
+        st.endTs = nowMs() + (minutes * 60 * 1000);
+        saveState(st);
+      }
+      if (timerTick) clearInterval(timerTick);
+      timerTick = setInterval(renderTimeLeft, 250);
+      renderTimeLeft();
+    }
+
+    function renderTimeLeft() {
+      const st = loadState();
+      const remaining = Math.max(0, Math.floor((st.endTs - nowMs()) / 1000));
+      const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
+      const ss = String(remaining % 60).padStart(2, "0");
+      timeLeftEl.textContent = `${mm}:${ss}`;
+      if (remaining <= 60) timeLeftEl.classList.add("danger");
+      else timeLeftEl.classList.remove("danger");
+    }
+
+    // ============================================================
+    // WORD COUNT
+    // ============================================================
+    function countWords(text) {
+      return (text || "")
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .length;
+    }
+
+    function renderWordCounts() {
+      wc1.textContent = `Words: ${countWords(task1AnswerEl.value)}`;
+      wc2.textContent = `Words: ${countWords(task2AnswerEl.value)}`;
+    }
+
+    // ============================================================
+    // SAVE / RESTORE
+    // ============================================================
+    function restore() {
+      const a = loadAnswers();
+      if (a.task1 && typeof a.task1.answer === "string") task1AnswerEl.value = a.task1.answer;
+      if (a.task2 && typeof a.task2.answer === "string") task2AnswerEl.value = a.task2.answer;
+      renderWordCounts();
+    }
+
+    function saveNow() {
+      const a = loadAnswers();
+      a.task1 = {
+        prompt: (task1PromptEl.textContent || "").trim(),
+        answer: (task1AnswerEl.value || "")
+      };
+      a.task2 = {
+        prompt: (task2PromptEl.textContent || "").trim(),
+        answer: (task2AnswerEl.value || "")
+      };
+      a.saved_at = new Date().toISOString();
+      saveAnswers(a);
+      renderWordCounts();
+    }
+
+    // Autosave on typing
+    task1AnswerEl.addEventListener("input", saveNow);
+    task2AnswerEl.addEventListener("input", saveNow);
+
+    // ============================================================
+    // SUBMIT
+    // ============================================================
+    submitBtn.addEventListener("click", submitWritingAndGoNext);
+
+    async function submitWritingAndGoNext() {
+      topMsg.textContent = "";
+
+      saveNow();
+
+      const a = loadAnswers();
+      a.completed = true;
+      a.completed_at = new Date().toISOString();
+      saveAnswers(a);
+
+      const payload = {
+        submission_id: submissionId,
+        lead,
+        answers: {
+          writing: {
+            test_id: a.test_id,
+            task1: a.task1,
+            task2: a.task2,
+            completed: true
+          }
+        }
+      };
+
+      try {
+        const res = await fetch("/api/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const text = await res.text();
+        if (!res.ok) {
+          // NOTE: Keep this visible for debugging if your API isn't ready yet.
+          topMsg.textContent = "Submit failed: " + text;
+          return;
+        }
+      } catch (e) {
+        console.error(e);
+        topMsg.textContent = "Network error submitting. Please try again.";
+        return;
+      }
+
+      // TODO: Choose your next page
+      // window.location.assign("/done.html");
+      window.location.assign("/thank-you.html"); // placeholder safe redirect
+    }
+
+    // ============================================================
+    // BOOT
+    // ============================================================
+    (function boot() {
+      testName.textContent = "— Writing (Task 1 + Task 2)";
+      startTimerIfNeeded(DEFAULT_TIME_MIN);
+      restore();
+    })();
   </script>
 </body>
 </html>
