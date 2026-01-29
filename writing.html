@@ -19,7 +19,7 @@
     .layout { display:grid; grid-template-columns: 1fr; gap: 14px; }
     .task { border:1px solid #ddd; border-radius:12px; padding:14px; background:#fff; }
     .task h2 { margin: 0 0 8px; }
-    .prompt { white-space: pre-wrap; line-height:1.5; }
+    .prompt { white-space: normal; line-height:1.5; }
 
     textarea {
       width: 100%;
@@ -73,9 +73,25 @@
         <div class="spacer"></div>
 
         <!-- TODO: Paste your Task 1 prompt below -->
-        <div class="prompt notice" id="task1Prompt">
-PASTE TASK 1 PROMPT HERE
-        </div>
+	<div class="prompt notice" id="task1Prompt">
+	  <p><strong>WRITING TASK 1</strong></p>
+	  <p>
+		The chart below shows the results of a survey about people’s coffee and tea buying and drinking habits in five Australian cities.
+	  </p>
+	  <p>
+		Summarise the information by selecting and reporting the main features, and make comparisons where relevant.
+	  </p>
+	  <p><strong>Write at least 150 words.</strong></p>
+
+	  <div class="spacer"></div>
+
+	  <img
+		src="/assets/writing/task1.png"
+		alt="IELTS Writing Task 1 chart: Coffee and tea buying and drinking habits in five cities in Australia"
+		style="max-width:100%; height:auto; display:block; margin:0 auto; border:1px solid #ddd; border-radius:10px;"
+	  >
+	</div>
+
 
         <div class="spacer"></div>
         <textarea id="task1Answer" placeholder="Type Task 1 answer here…"></textarea>
@@ -92,9 +108,26 @@ PASTE TASK 1 PROMPT HERE
         <div class="spacer"></div>
 
         <!-- TODO: Paste your Task 2 prompt below -->
-        <div class="prompt notice" id="task2Prompt">
-PASTE TASK 2 PROMPT HERE
-        </div>
+	<div class="prompt notice" id="task2Prompt">
+	  <p><strong>WRITING TASK 2</strong></p>
+	  <p>You should spend about <strong>40 minutes</strong> on this task.</p>
+
+	  <p>Write about the following topic:</p>
+
+	  <div style="border:1px solid #ddd; border-radius:10px; padding:12px; background:#fff;">
+		<p style="margin:0 0 10px;">
+		  <em>In some countries, owning a home rather than renting one is very important for people.</em>
+		</p>
+		<p style="margin:0 0 10px;"><em>Why might this be the case?</em></p>
+		<p style="margin:0;"><em>Do you think this is a positive or negative situation?</em></p>
+	  </div>
+
+	  <div class="spacer"></div>
+
+	  <p>Give reasons for your answer and include any relevant examples from your own knowledge or experience.</p>
+	  <p><strong>Write at least 250 words.</strong></p>
+	</div>
+
 
         <div class="spacer"></div>
         <textarea id="task2Answer" placeholder="Type Task 2 essay here…"></textarea>
@@ -115,6 +148,20 @@ PASTE TASK 2 PROMPT HERE
         window.location.assign("/index.html");
       }
     })();
+	
+	const TASK1_PROMPT_TEXT =
+  "The chart below shows the results of a survey about people’s coffee and tea buying and drinking habits in five Australian cities.\n\n" +
+  "Summarise the information by selecting and reporting the main features, and make comparisons where relevant.\n\n" +
+  "Write at least 150 words.";
+  
+  const TASK2_PROMPT_TEXT =
+  "In some countries, owning a home rather than renting one is very important for people.\n\n" +
+  "Why might this be the case?\n\n" +
+  "Do you think this is a positive or negative situation?\n\n" +
+  "Give reasons for your answer and include any relevant examples from your own knowledge or experience.\n\n" +
+  "Write at least 250 words.";
+
+
 
     // ============================================================
     // CONFIG
@@ -238,14 +285,16 @@ PASTE TASK 2 PROMPT HERE
 
     function saveNow() {
       const a = loadAnswers();
-      a.task1 = {
-        prompt: (task1PromptEl.textContent || "").trim(),
-        answer: (task1AnswerEl.value || "")
-      };
-      a.task2 = {
-        prompt: (task2PromptEl.textContent || "").trim(),
-        answer: (task2AnswerEl.value || "")
-      };
+	a.task1 = {
+	  prompt: TASK1_PROMPT_TEXT,
+	  answer: (task1AnswerEl.value || "")
+	};
+
+	a.task2 = {
+	  prompt: TASK2_PROMPT_TEXT,
+	  answer: (task2AnswerEl.value || "")
+	};
+
       a.saved_at = new Date().toISOString();
       saveAnswers(a);
       renderWordCounts();
