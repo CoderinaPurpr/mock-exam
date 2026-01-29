@@ -130,7 +130,7 @@
 
     <p class="muted">
       You can play each section audio <strong>only once</strong>.
-      When the audio ends, you will get <strong>2 minutes</strong> to check and change your answers.
+      When the test ends, you will get <strong>2 minutes</strong> to check and change your answers.
     </p>
 
     <div id="topMsg" class="error" style="min-height:1.2em;"></div>
@@ -170,7 +170,7 @@
 
       <div class="row">
         <button id="nextBtn" class="btn secondary" type="button" disabled>Next Section</button>
-        <span class="small">Next unlocks when the 2-minute review ends.</span>
+      <!--  <span class="small">Next unlocks when the 2-minute review ends.</span> -->
       </div>
     </div>
 
@@ -995,17 +995,70 @@ if (sectionIdx === 4) {
       }
     });
 
-    audio.addEventListener("ended", () => {
-      const st = loadState();
-      const secIdx = getCurrentSectionIdx();
-      const meta = st.sectionAudio[String(secIdx)] || {};
-      meta.ended = true;
-      st.sectionAudio[String(secIdx)] = meta;
-      saveState(st);
-      startReviewTimer(secIdx);
-      playBtn.disabled = true;
-      resumeBtn.classList.add("hidden");
-    });
+	audio.addEventListener("ended", async () => {
+	  const st = loadState();
+	  const secIdx = getCurrentSectionIdx();
+
+	  // Mark current section audio as ended
+	  const meta = st.sectionAudio[String(secIdx)] || { started: true, ended: false, lastTime: 0, duration: 0 };
+	  meta.ended = true;
+	  st.sectionAudio[String(secIdx)] = meta;
+
+	  // Save + lock current section immediately
+	  saveSectionAnswers(secIdx);
+	  st.lockedSections[String(secIdx)] = true;
+
+	  // ✅ Sections 1–3: move straight to next section
+	  if (secIdx < 4) {
+		const nextIdx = secIdx + 1;
+
+		// Move state to next section
+		st.currentSection = nextIdx;
+
+		// Ensure next section has a clean audio meta (so Play isn't "stuck" disabled)
+		st.sectionAudio[String(nextIdx)] = st.sectionAudio[String(nextIdx)] || { started: false, ended: false, lastTime: 0, duration: 0 };
+
+		saveState(st);
+
+		// Render the next section UI + load its audio
+		loadCurrentSection();
+
+		// Try autoplay next audio (may be blocked by browser)
+		try {
+		  // Prime "started" so you still enforce play-once
+		  const st2 = loadState();
+		  st2.sectionAudio[String(nextIdx)].started = true;
+		  st2.sectionAudio[String(nextIdx)].ended = false;
+		  st2.sectionAudio[String(nextIdx)].lastTime = 0;
+		  saveState(st2);
+
+		  playBtn.disabled = true;
+		  resumeBtn.classList.add("hidden");
+		  lastAllowedTime = 0;
+
+		  await audio.play();
+		} catch (e) {
+		  // Autoplay blocked → allow manual play
+		  const st2 = loadState();
+		  st2.sectionAudio[String(nextIdx)].started = false; // let them press Play
+		  saveState(st2);
+
+		  playBtn.disabled = false;
+		  qMsg.textContent = "Press Play to start the next section.";
+		}
+
+		return;
+	  }
+
+	  // ✅ Section 4 only: do the 2-minute review timer
+	  saveState(st);
+	  startReviewTimer(secIdx);
+
+	  playBtn.disabled = true;
+	  resumeBtn.classList.add("hidden");
+	});
+
+
 
     playBtn.addEventListener("click", async () => {
       topMsg.textContent = "";
