@@ -75,7 +75,8 @@
     .q { margin: 10px 0; }
     .q input[type="text"] { max-width: 380px; }
 
-    .reading-layout { display:grid; grid-template-columns: 1.2fr 1fr; gap: 14px; }
+   /* .reading-layout { display:grid; grid-template-columns: 1.2fr 1fr; gap: 14px; } */
+   
     @media (max-width: 950px){ .reading-layout { grid-template-columns: 1fr; } }
 
     .passage-box { border:1px solid #ddd; border-radius:10px; padding:12px; background:#fff; }
@@ -122,27 +123,48 @@
          ============================================================ -->
     <div class="reading-layout">
 
-      <!-- LEFT: PASSAGE -->
-      <div class="card passage-box">
-        <h2 id="passageTitle">Passage</h2>
-        <div class="small" id="passageMeta"></div>
-        <div class="spacer"></div>
-        <div id="passageText" class="passage-text">Loading…</div>
-      </div>
+	<!-- LEFT: PASSAGE -->
+	<div class="reading-panel reading-passage">
+	  <h2 id="passageTitle">Passage</h2>
 
-      <!-- RIGHT: QUESTIONS -->
-      <div class="card">
-        <h2 id="questionsTitle">Questions</h2>
-        <div id="questions"></div>
-        <p id="qMsg" class="error" style="min-height:1.2em;"></p>
+	  <!-- Highlighter toolbar (added in step 2) -->
+	  <div class="highlight-toolbar">
+		<button id="hlToggle" class="btn secondary" type="button">Highlight: OFF</button>
 
-        <div class="spacer"></div>
-        <div class="row">
-          <button id="prevBtn" class="btn secondary" type="button">Previous Passage</button>
-          <button id="nextBtn" class="btn secondary" type="button">Next Passage</button>
-        </div>
-      </div>
-    </div>
+		<label class="hlColorLabel">
+		  Color:
+		  <select id="hlColor">
+			<option value="#fff3a3">Yellow</option>
+			<option value="#c9f7c9">Green</option>
+			<option value="#cfe8ff">Blue</option>
+			<option value="#ffd6e7">Pink</option>
+		  </select>
+		</label>
+
+		<button id="hlClear" class="btn secondary" type="button">Clear highlights</button>
+		<span class="hlTip">Select text → release mouse to highlight</span>
+	  </div>
+
+	  <div class="small" id="passageMeta"></div>
+	  <div class="spacer"></div>
+
+	  <!-- Add no-copy class (CSS already exists) -->
+	  <div id="passageText" class="passage-text no-copy">Loading…</div>
+	</div>
+
+	<!-- RIGHT: QUESTIONS -->
+	<div class="reading-panel reading-questions">
+	  <h2 id="questionsTitle">Questions</h2>
+	  <div id="questions"></div>
+	  <p id="qMsg" class="error" style="min-height:1.2em;"></p>
+
+	  <div class="spacer"></div>
+	  <div class="row">
+		<button id="prevBtn" class="btn secondary" type="button">Previous Passage</button>
+		<button id="nextBtn" class="btn secondary" type="button">Next Passage</button>
+	  </div>
+	 </div>
+	</div>
   </main>
 
   <script>
@@ -209,6 +231,73 @@
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
     const submitBtn = document.getElementById("submitBtn");
+	
+	  // =========================
+	  // Highlighter
+	  // =========================
+
+	let hlEnabled = false;
+
+	const hlToggle = document.getElementById("hlToggle");
+	const hlColor  = document.getElementById("hlColor");
+	const hlClear  = document.getElementById("hlClear");
+
+	// Only attach highlighter if the toolbar + passage exist
+	if (hlToggle && hlColor && hlClear && passageText) {
+
+	  // Set default highlight color
+	  document.documentElement.style.setProperty("--hl-color", hlColor.value);
+
+	  hlColor.addEventListener("change", () => {
+		document.documentElement.style.setProperty("--hl-color", hlColor.value);
+	  });
+
+	  hlToggle.addEventListener("click", () => {
+		hlEnabled = !hlEnabled;
+		hlToggle.textContent = hlEnabled ? "Highlight: ON" : "Highlight: OFF";
+	  });
+
+	  hlClear.addEventListener("click", () => {
+		const marks = passageText.querySelectorAll("mark.hl");
+		marks.forEach(m => {
+		  const parent = m.parentNode;
+		  while (m.firstChild) parent.insertBefore(m.firstChild, m);
+		  parent.removeChild(m);
+		  parent.normalize();
+		});
+	  });
+
+	  passageText.addEventListener("mouseup", () => {
+		if (!hlEnabled) return;
+
+		const sel = window.getSelection();
+		if (!sel || sel.rangeCount === 0) return;
+
+		const range = sel.getRangeAt(0);
+		if (range.collapsed) return;
+
+		const common = range.commonAncestorContainer;
+		if (!passageText.contains(common)) return;
+
+		try {
+		  const mark = document.createElement("mark");
+		  mark.className = "hl";
+		  range.surroundContents(mark);
+		  sel.removeAllRanges();
+		} catch (err) {
+		  try {
+			const mark = document.createElement("mark");
+			mark.className = "hl";
+			mark.appendChild(range.extractContents());
+			range.insertNode(mark);
+			sel.removeAllRanges();
+		  } catch {}
+		}
+	  });
+
+	}
+
+
 
     // ============================================================
     // STATE HELPERS
@@ -291,7 +380,46 @@
       }
       return true;
     }
+	
+	
+	// ============================================================
+	// Anti-cheat (hard block): Ctrl/Cmd + F/C/V/X/A + paste
+	// ============================================================
+	function hardBlockShortcuts(e) {
+	  const combo = e.ctrlKey || e.metaKey;
+	  if (!combo) return;
 
+	  const k = String(e.key || "").toLowerCase();
+	  if (["f","c","v","x","a"].includes(k)) {
+		e.preventDefault();
+		e.stopPropagation();
+		if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+	  }
+	}
+
+	// capture=true is the important part
+	window.addEventListener("keydown", hardBlockShortcuts, true);
+
+	window.addEventListener("paste", (e) => {
+	  e.preventDefault();
+	  e.stopPropagation();
+	  if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+	}, true);
+
+	window.addEventListener("beforeinput", (e) => {
+	  if (e.inputType === "insertFromPaste" || e.inputType === "insertFromDrop") {
+		e.preventDefault();
+		e.stopPropagation();
+		if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+	  }
+	}, true);
+
+	// keep your right-click blocks
+	passageText.addEventListener("contextmenu", e => e.preventDefault());
+	questionsEl.addEventListener("contextmenu", e => e.preventDefault());
+
+	
+	
     // ============================================================
     // RENDER UI
     // ============================================================
@@ -300,25 +428,36 @@
       return TEST.passages[st.currentPassageIdx];
     }
 
-    function renderTabs() {
-      passageTabs.innerHTML = "";
-      const st = loadState();
+function renderTabs() {
+  passageTabs.innerHTML = "";
 
-      TEST.passages.forEach((p, idx) => {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "pill" + (idx === st.currentPassageIdx ? " active" : "");
-        b.textContent = `Passage ${p.id}`;
-        b.addEventListener("click", () => {
-          // Save current passage answers before switching
-          saveCurrentPassageAnswers();
-          st.currentPassageIdx = idx;
-          saveState(st);
-          renderAll();
-        });
-        passageTabs.appendChild(b);
-      });
-    }
+  const st = loadState();
+  const passages = (TEST && TEST.passages) ? TEST.passages : [];
+
+  passages.forEach((p, idx) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "passage-tab" + (idx === st.currentPassageIdx ? " active" : "");
+	b.textContent = `P${idx + 1}`; // makes it obvious it's a passage tab
+    b.addEventListener("click", () => goToPassage(idx));
+    passageTabs.appendChild(b);
+  });
+}
+
+function goToPassage(idx) {
+  const st = loadState();
+
+  // clamp
+  const last = TEST.passages.length - 1;
+  const target = Math.max(0, Math.min(last, idx));
+
+  saveCurrentPassageAnswers();
+  st.currentPassageIdx = target;
+  saveState(st);
+  renderAll();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
 
 function renderPassage() {
   const p = currentPassage();
@@ -359,7 +498,7 @@ function renderSummaryLine(p, qNum) {
     <p>
       ${escapeHtml(q.prompt)}
       <strong>${qNum}</strong>
-      <input type="text" id="q${qNum}" placeholder="${escapeHtml(q.placeholder || "NO MORE THAN TWO WORDS")}">
+      <input type="text" id="q${qNum}">
       ${escapeHtml(q.after || "")}
     </p>
   `;
@@ -424,7 +563,7 @@ function initTwoPickGroup(groupName, outId1, outId2) {
       <div class="q">
         <p style="margin:0; line-height:1.55;">
           <strong>${num}</strong>) ${escapeHtml(before)}
-          <input type="text" id="q${num}" placeholder="${escapeHtml(placeholder || "one word")}">
+          <input type="text" id="q${num}">
           ${escapeHtml(after || "")}
         </p>
       </div>
@@ -669,12 +808,12 @@ function renderQuestions() {
 
           <p style="margin-top:10px; line-height:1.6;">
             The writer has experience of a large number of <strong>38</strong>
-            <input type="text" id="q38" placeholder="1–2 words" style="max-width:220px;">
+            <input type="text" id="q38" placeholder="" style="max-width:220px;">
             , and was the first stranger that certain previously <strong>39</strong>
-            <input type="text" id="q39" placeholder="1–2 words" style="max-width:220px;">
+            <input type="text" id="q39" placeholder="" style="max-width:220px;">
             people had encountered. He believes there is no need for further exploration of Earth’s
             <strong>40</strong>
-            <input type="text" id="q40" placeholder="1–2 words" style="max-width:220px;">
+            <input type="text" id="q40" placeholder="" style="max-width:220px;">
             , except to answer specific questions such as how buffalo eat.
           </p>
         </div>
@@ -691,7 +830,7 @@ function renderQuestions() {
         <label>
           <strong>${q.number}</strong> ${escapeHtml(q.prompt || "")}
           <br>
-          <input type="text" id="q${q.number}" placeholder="${escapeHtml(q.placeholder || "Answer")}">
+          <input type="text" id="q${q.number}">
         </label>
       </div>
     `).join("");
