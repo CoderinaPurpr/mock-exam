@@ -57,46 +57,43 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("startBtn").addEventListener("click", () => {
-        const name = leadName.value.trim();
-        const email = leadEmail.value.trim();
-        const whatsapp = leadWhatsApp.value.trim();
-        const consent = leadConsent.checked;
-        const errorBox = formError;
-		
-		const submissionId = localStorage.getItem("mock_submission_id");
-		if (submissionId && localStorage.getItem(`reading_started_${submissionId}`) === "1") {
-		  // They already started reading — send them back into the flow
-		  window.location.assign("/reading.html");
-		}
+	document.getElementById("startBtn").addEventListener("click", () => {
+	  const name = leadName.value.trim();
+	  const email = leadEmail.value.trim();
+	  const whatsapp = leadWhatsApp.value.trim();
+	  const consent = leadConsent.checked;
+	  const errorBox = formError;
 
+	  errorBox.textContent = "";
 
-        errorBox.textContent = "";
+	  // ✅ Validate first
+	  if (!name || !email) {
+		errorBox.textContent = "Please enter your name and email.";
+		return;
+	  }
+	  if (!consent) {
+		errorBox.textContent = "Please give consent so we can contact you.";
+		return;
+	  }
 
-        if (!name || !email) {
-          errorBox.textContent = "Please enter your name and email.";
-          return;
-        }
-        if (!consent) {
-          errorBox.textContent = "Please give consent so we can contact you.";
-          return;
-        }
+	  // ✅ Save lead
+	  localStorage.setItem("mock_lead", JSON.stringify({ name, email, whatsapp, consent }));
 
-        localStorage.setItem(
-          "mock_lead",
-          JSON.stringify({ name, email, whatsapp, consent })
-        );
+	  // ✅ If an unfinished attempt exists, resume it
+	  const submissionId = localStorage.getItem("mock_submission_id");
+	  if (submissionId && localStorage.getItem(`reading_started_${submissionId}`) === "1") {
+		window.location.assign("/reading.html");
+		return; // ✅ critical
+	  }
 
-        // NEW attempt every time
-        localStorage.setItem("mock_submission_id", "sub_" + crypto.randomUUID());
+	  // ✅ Otherwise start a new attempt
+	  localStorage.setItem("mock_submission_id", "sub_" + crypto.randomUUID());
 
-        // Clear old section data
-        localStorage.removeItem("mock_reading_answers");
-        localStorage.removeItem("reading_start_ts_IELTS11_R1_P1");
+	  localStorage.removeItem("mock_reading_answers");
+	  localStorage.removeItem("reading_start_ts_IELTS11_R1_P1");
 
-        // GO FORWARD
-        window.location.assign("/reading.html");
-      });
+	  window.location.assign("/reading.html");
+	});
     });
   </script>
 
