@@ -55,68 +55,68 @@
     </div>
   </main>
 
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-	
-	document.getElementById("startBtn").addEventListener("click", () => {
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const leadName = document.getElementById("leadName");
+  const leadEmail = document.getElementById("leadEmail");
+  const leadWhatsApp = document.getElementById("leadWhatsApp");
+  const leadConsent = document.getElementById("leadConsent");
+  const formError = document.getElementById("formError");
+  const startBtn = document.getElementById("startBtn");
 
-	  // ─────────────────────────
-	  // 1️⃣ Read form values
-	  // ─────────────────────────
-	  const name = leadName.value.trim();
-	  const email = leadEmail.value.trim();
-	  const whatsapp = leadWhatsApp.value.trim();
-	  const consent = leadConsent.checked;
+  startBtn.addEventListener("click", () => {
+    // 1) Read values
+    const name = (leadName.value || "").trim();
+    const email = (leadEmail.value || "").trim();
+    const whatsapp = (leadWhatsApp.value || "").trim();
+    const consent = leadConsent.checked;
 
-	  formError.textContent = "";
+    formError.textContent = "";
 
-	  // ─────────────────────────
-	  // 2️⃣ VALIDATION (FIRST)
-	  // ─────────────────────────
-	  if (!name || !email) {
-		formError.textContent = "Please enter your name and email.";
-		return; // ⛔ stop here
-	  }
+    // 2) Validate FIRST
+    if (!name || !email) {
+      formError.textContent = "Please enter your name and email.";
+      return;
+    }
+    if (!consent) {
+      formError.textContent = "Please give consent so we can contact you.";
+      return;
+    }
 
-	  if (!consent) {
-		formError.textContent = "Please give consent so we can contact you.";
-		return; // ⛔ stop here
-	  }
+    // 3) Save lead
+    localStorage.setItem("mock_lead", JSON.stringify({ name, email, whatsapp, consent }));
 
-	  // ─────────────────────────
-	  // 3️⃣ Save lead (only after validation)
-	  // ─────────────────────────
-	  localStorage.setItem(
-		"mock_lead",
-		JSON.stringify({ name, email, whatsapp, consent })
-	  );
+    // 4) Resume if unfinished attempt exists
+    const submissionId = localStorage.getItem("mock_submission_id");
+    if (submissionId && localStorage.getItem(`reading_started_${submissionId}`) === "1") {
+      window.location.assign("/reading.html");
+      return;
+    }
 
-	  // ─────────────────────────
-	  // 4️⃣ Resume logic (AFTER validation)
-	  // ─────────────────────────
-	  const submissionId = localStorage.getItem("mock_submission_id");
-	  if (
-		submissionId &&
-		localStorage.getItem(`reading_started_${submissionId}`) === "1"
-	  ) {
-		window.location.assign("/reading.html");
-		return; // ✅ critical
-	  }
+    // 5) Start NEW attempt (clear previous attempt data)
+    const oldId = localStorage.getItem("mock_submission_id");
 
-	  // ─────────────────────────
-	  // 5️⃣ Start a NEW attempt
-	  // ─────────────────────────
-	  const newId = "sub_" + crypto.randomUUID();
-	  localStorage.setItem("mock_submission_id", newId);
+    const newId = "sub_" + crypto.randomUUID();
+    localStorage.setItem("mock_submission_id", newId);
 
-	  localStorage.removeItem("mock_reading_answers");
-	  localStorage.removeItem("reading_start_ts_IELTS11_R1_P1");
+    if (oldId) {
+      localStorage.removeItem(`mock_reading_answers_${oldId}`);
+      localStorage.removeItem(`reading_state_${oldId}`);
+      localStorage.removeItem(`reading_started_${oldId}`);
 
-	  window.location.assign("/reading.html");
-	});
+      localStorage.removeItem(`mock_listening_answers_${oldId}`);
+      localStorage.removeItem(`listening_state_${oldId}`);
 
-    });
-  </script>
+      localStorage.removeItem(`writing_state_${oldId}`);
+      localStorage.removeItem(`writing_answers_${oldId}`);
+    }
+
+    // ✅ Start test
+    window.location.assign("/reading.html");
+  });
+});
+</script>
+
 
 </body>
 </html>

@@ -1111,9 +1111,11 @@ if (sectionIdx === 4) {
       const st = loadState();
       const secIdx = getCurrentSectionIdx();
       const meta = st.sectionAudio[String(secIdx)] || { started:false, ended:false, lastTime:0 };
-      meta.started = true;
+      
+	  meta.started = true;
       meta.ended = false;
       meta.lastTime = 0;
+	  
       st.sectionAudio[String(secIdx)] = meta;
       saveState(st);
 
@@ -1122,7 +1124,28 @@ if (sectionIdx === 4) {
       lastAllowedTime = 0;
 
       try { await audio.play(); }
-      catch (e) { console.error(e); topMsg.textContent = "Audio couldn’t start. Try tapping Play again."; }
+      catch (e) {
+	  console.error(e);
+	  
+	
+	  // 🔴 IMPORTANT: revert "started" because audio never actually played
+	  const st3 = loadState();
+	  const secIdx3 = getCurrentSectionIdx();
+	  const meta3 = st3.sectionAudio[String(secIdx3)] || {};
+
+	  meta3.started = false;
+	  meta3.ended = false;
+	  meta3.lastTime = 0;
+
+	  st3.sectionAudio[String(secIdx3)] = meta3;
+	  saveState(st3);
+
+	  playBtn.disabled = false;
+	  resumeBtn.classList.add("hidden");
+	  lastAllowedTime = 0;
+
+	  topMsg.textContent = "Audio couldn’t start. Click Play again.";
+	}
     });
 
 	resumeBtn.addEventListener("click", async () => {
