@@ -57,43 +57,64 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
+	
 	document.getElementById("startBtn").addEventListener("click", () => {
+
+	  // ─────────────────────────
+	  // 1️⃣ Read form values
+	  // ─────────────────────────
 	  const name = leadName.value.trim();
 	  const email = leadEmail.value.trim();
 	  const whatsapp = leadWhatsApp.value.trim();
 	  const consent = leadConsent.checked;
-	  const errorBox = formError;
 
-	  errorBox.textContent = "";
+	  formError.textContent = "";
 
-	  // ✅ Validate first
+	  // ─────────────────────────
+	  // 2️⃣ VALIDATION (FIRST)
+	  // ─────────────────────────
 	  if (!name || !email) {
-		errorBox.textContent = "Please enter your name and email.";
-		return;
+		formError.textContent = "Please enter your name and email.";
+		return; // ⛔ stop here
 	  }
+
 	  if (!consent) {
-		errorBox.textContent = "Please give consent so we can contact you.";
-		return;
+		formError.textContent = "Please give consent so we can contact you.";
+		return; // ⛔ stop here
 	  }
 
-	  // ✅ Save lead
-	  localStorage.setItem("mock_lead", JSON.stringify({ name, email, whatsapp, consent }));
+	  // ─────────────────────────
+	  // 3️⃣ Save lead (only after validation)
+	  // ─────────────────────────
+	  localStorage.setItem(
+		"mock_lead",
+		JSON.stringify({ name, email, whatsapp, consent })
+	  );
 
-	  // ✅ If an unfinished attempt exists, resume it
+	  // ─────────────────────────
+	  // 4️⃣ Resume logic (AFTER validation)
+	  // ─────────────────────────
 	  const submissionId = localStorage.getItem("mock_submission_id");
-	  if (submissionId && localStorage.getItem(`reading_started_${submissionId}`) === "1") {
+	  if (
+		submissionId &&
+		localStorage.getItem(`reading_started_${submissionId}`) === "1"
+	  ) {
 		window.location.assign("/reading.html");
 		return; // ✅ critical
 	  }
 
-	  // ✅ Otherwise start a new attempt
-	  localStorage.setItem("mock_submission_id", "sub_" + crypto.randomUUID());
+	  // ─────────────────────────
+	  // 5️⃣ Start a NEW attempt
+	  // ─────────────────────────
+	  const newId = "sub_" + crypto.randomUUID();
+	  localStorage.setItem("mock_submission_id", newId);
 
 	  localStorage.removeItem("mock_reading_answers");
 	  localStorage.removeItem("reading_start_ts_IELTS11_R1_P1");
 
 	  window.location.assign("/reading.html");
 	});
+
     });
   </script>
 

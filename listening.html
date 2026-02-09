@@ -944,7 +944,7 @@ if (sectionIdx === 4) {
       const meta = st.sectionAudio[String(sectionIdx)] || { started:false, ended:false, lastTime:0, duration:0 };
       st.sectionAudio[String(sectionIdx)] = meta;
       saveState(st);
-
+	  lastAllowedTime = meta.lastTime || 0;
       const sec = SECTIONS[sectionIdx - 1];
       audio.src = sec.audioSrc;
 	  if (meta.started && !meta.ended) audio.load();
@@ -991,11 +991,16 @@ if (sectionIdx === 4) {
 	
 	
 
-    audio.addEventListener("seeking", () => {
-      if ((audio.currentTime || 0) + 0.5 < lastAllowedTime) {
-        audio.currentTime = lastAllowedTime;
-      }
-    });
+	audio.addEventListener("seeking", () => {
+	  const cur = audio.currentTime || 0;
+
+	  // allow forward seeks (or tiny jitter)
+	  if (cur + 0.5 >= lastAllowedTime) return;
+
+	  // block rewinds
+	  audio.currentTime = lastAllowedTime;
+	});
+
 
 	audio.addEventListener("ended", async () => {
 	  const st = loadState();
