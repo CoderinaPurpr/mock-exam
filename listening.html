@@ -947,7 +947,7 @@ if (sectionIdx === 4) {
 
       const sec = SECTIONS[sectionIdx - 1];
       audio.src = sec.audioSrc;
-
+	  if (meta.started && !meta.ended) audio.load();
       if (meta.started && !meta.ended) resumeBtn.classList.remove("hidden");
       else resumeBtn.classList.add("hidden");
 
@@ -988,6 +988,8 @@ if (sectionIdx === 4) {
       saveState(st);
       lastAllowedTime = Math.max(lastAllowedTime, audio.currentTime || 0);
     });
+	
+	
 
     audio.addEventListener("seeking", () => {
       if ((audio.currentTime || 0) + 0.5 < lastAllowedTime) {
@@ -1058,6 +1060,37 @@ if (sectionIdx === 4) {
 	  resumeBtn.classList.add("hidden");
 	});
 
+	// ============================================================
+	// Resume helper: seek only after metadata is ready
+	// ============================================================
+	let pendingSeekTime = null;
+
+	function seekWhenReady(t) {
+	  pendingSeekTime = Math.max(0, Number(t) || 0);
+
+	  // If metadata already loaded, seek immediately
+	  if (audio.readyState >= 1) {
+		audio.currentTime = pendingSeekTime;
+		lastAllowedTime = pendingSeekTime;
+		pendingSeekTime = null;
+		updateProgressUI();
+		return;
+	  }
+
+	  // Otherwise wait for metadata
+	  audio.addEventListener("loadedmetadata", function onMeta() {
+		audio.removeEventListener("loadedmetadata", onMeta);
+		if (pendingSeekTime != null) {
+		  audio.currentTime = pendingSeekTime;
+		  lastAllowedTime = pendingSeekTime;
+		  pendingSeekTime = null;
+		  updateProgressUI();
+		}
+	  }, { once: true });
+
+	  // Force metadata load
+	  audio.load();
+	}
 
 
     playBtn.addEventListener("click", async () => {
@@ -1081,22 +1114,22 @@ if (sectionIdx === 4) {
       catch (e) { console.error(e); topMsg.textContent = "Audio couldn’t start. Try tapping Play again."; }
     });
 
-    resumeBtn.addEventListener("click", async () => {
-      topMsg.textContent = "";
-      const st = loadState();
-      const secIdx = getCurrentSectionIdx();
-      const meta = st.sectionAudio[String(secIdx)];
-      if (!meta || !meta.started || meta.ended) return;
+	resumeBtn.addEventListener("click", async () => {
+	  topMsg.textContent = "";
+	  const st = loadState();
+	  const secIdx = getCurrentSectionIdx();
+	  const meta = st.sectionAudio[String(secIdx)];
+	  if (!meta || !meta.started || meta.ended) return;
 
-      try {
-        audio.currentTime = meta.lastTime || 0;
-        lastAllowedTime = meta.lastTime || 0;
-        await audio.play();
-      } catch (e) {
-        console.error(e);
-        topMsg.textContent = "Audio couldn’t resume. Try again.";
-      }
-    });
+	  try {
+		seekWhenReady(meta.lastTime || 0);
+		await audio.play();
+	  } catch (e) {
+		console.error(e);
+		topMsg.textContent = "Audio couldn’t resume. Try again.";
+	  }
+	});
+
 
     // ============================================================
     // Review timer (unchanged)
