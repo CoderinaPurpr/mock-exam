@@ -1071,31 +1071,37 @@ if (sectionIdx === 4) {
 	let pendingSeekTime = null;
 
 	function seekWhenReady(t) {
-	  pendingSeekTime = Math.max(0, Number(t) || 0);
+	  const target = Math.max(0, Number(t) || 0);
 
-	  // If metadata already loaded, seek immediately
-	  if (audio.readyState >= 1) {
-		audio.currentTime = pendingSeekTime;
-		lastAllowedTime = pendingSeekTime;
-		pendingSeekTime = null;
-		updateProgressUI();
-		return;
-	  }
+	  return new Promise((resolve) => {
+		function doSeek() {
+		  // set time, then wait for seek to finish
+		  audio.currentTime = target;
 
-	  // Otherwise wait for metadata
-	  audio.addEventListener("loadedmetadata", function onMeta() {
-		audio.removeEventListener("loadedmetadata", onMeta);
-		if (pendingSeekTime != null) {
-		  audio.currentTime = pendingSeekTime;
-		  lastAllowedTime = pendingSeekTime;
-		  pendingSeekTime = null;
-		  updateProgressUI();
+		  audio.addEventListener("seeked", function onSeeked() {
+			audio.removeEventListener("seeked", onSeeked);
+			lastAllowedTime = target;   // keep anti-rewind in sync
+			updateProgressUI();
+			resolve();
+		  }, { once: true });
 		}
-	  }, { once: true });
 
-	  // Force metadata load
-	  audio.load();
+		// If metadata is ready, seek now
+		if (audio.readyState >= 1) {
+		  doSeek();
+		  return;
+		}
+
+		// Otherwise wait for metadata first
+		audio.addEventListener("loadedmetadata", function onMeta() {
+		  audio.removeEventListener("loadedmetadata", onMeta);
+		  doSeek();
+		}, { once: true });
+
+		audio.load(); // force metadata fetch
+	  });
 	}
+
 
 
     playBtn.addEventListener("click", async () => {
@@ -1127,13 +1133,14 @@ if (sectionIdx === 4) {
 	  if (!meta || !meta.started || meta.ended) return;
 
 	  try {
-		seekWhenReady(meta.lastTime || 0);
+		await seekWhenReady(meta.lastTime || 0);  // ✅ wait until seek completes
 		await audio.play();
 	  } catch (e) {
 		console.error(e);
 		topMsg.textContent = "Audio couldn’t resume. Try again.";
 	  }
 	});
+
 
 
     // ============================================================
