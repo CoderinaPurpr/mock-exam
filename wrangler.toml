@@ -1,0 +1,8 @@
+name = "mock-exam"
+pages_build_output_dir = "."
+compatibility_date = "2026-07-08"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mock_exam-submissions"
+database_id = "fc68badc-b626-435a-b8e7-f19eff8df948"

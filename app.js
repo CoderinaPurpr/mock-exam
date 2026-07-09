@@ -39,5 +39,8 @@ export async function submitMvp() {
   });
 
   const text = await res.text();
-  return { status: res.status, text };
+  return { 
+    status: res.status, 
+    text,
+   };
 }
