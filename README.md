@@ -4,7 +4,7 @@ An online IELTS examination platform designed to simulate the official IELTS tes
 
 ## Live Demo
 
-*(Add your deployed URL here if applicable.)*
+https://mock-exam-12i.pages.dev/
 
 ## Features
 
@@ -122,7 +122,7 @@ npx wrangler secret put OPENAI_API_KEY
 **Rudi van Vuuren**
 
 - GitHub: https://github.com/CoderinaPurpr
-- LinkedIn: *(Add your LinkedIn profile)*
+- LinkedIn: https://www.linkedin.com/in/rudi-van-vuuren/
 
 ## Licence
 
