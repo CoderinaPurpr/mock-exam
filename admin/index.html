@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IELTS Examiner</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    body {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+
+    .admin-header {
+      margin-bottom: 28px;
+    }
+
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    .admin-table th,
+    .admin-table td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+
+    .admin-table th {
+      font-weight: 600;
+    }
+
+    .admin-table a {
+      font-weight: 600;
+    }
+
+    .muted {
+      color: #666;
+    }
+
+    .error {
+      color: #a00;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="admin-header">
+    <h1>IELTS Examiner</h1>
+    <p class="muted">Candidate submissions</p>
+  </header>
+
+  <main>
+    <div id="status">Loading submissions...</div>
+
+    <table class="admin-table" id="submissionsTable" hidden>
+      <thead>
+        <tr>
+          <th>Candidate</th>
+          <th>Email</th>
+          <th>Date</th>
+          <th>Reading</th>
+          <th>Listening</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="submissionsBody"></tbody>
+    </table>
+  </main>
+
+  <script>
+    async function loadSubmissions() {
+      const status = document.getElementById("status");
+      const table = document.getElementById("submissionsTable");
+      const body = document.getElementById("submissionsBody");
+
+      try {
+        const response = await fetch("/api/submissions", {
+          cache: "no-store"
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          throw new Error(data.error || "Unable to load submissions");
+        }
+
+        const submissions = data.submissions || [];
+
+        if (!submissions.length) {
+          status.textContent = "No submissions found.";
+          return;
+        }
+
+        body.innerHTML = "";
+
+        for (const submission of submissions) {
+          const row = document.createElement("tr");
+
+          row.innerHTML = `
+            <td>${escapeHtml(submission.name || "")}</td>
+            <td>${escapeHtml(submission.email || "")}</td>
+            <td>${formatDate(submission.created_at)}</td>
+            <td>${formatScore(submission.reading_score, submission.reading_total)}</td>
+            <td>${formatScore(submission.listening_score, submission.listening_total)}</td>
+            <td>${escapeHtml(submission.status || "")}</td>
+            <td>
+              <a href="/admin/view.html?id=${encodeURIComponent(submission.id)}">
+                View
+              </a>
+            </td>
+          `;
+
+          body.appendChild(row);
+        }
+
+        status.hidden = true;
+        table.hidden = false;
+      } catch (err) {
+        status.className = "error";
+        status.textContent = `Could not load submissions: ${err.message}`;
+      }
+    }
+
+    function formatScore(score, total) {
+      if (score === null || score === undefined) return "—";
+      return `${score} / ${total ?? 40}`;
+    }
+
+    function formatDate(value) {
+      if (!value) return "—";
+      return value;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    loadSubmissions();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Candidate Results | IELTS Examiner</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    body {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 24px;
+    }
+
+    .candidate-header,
+    .result-section {
+      background: white;
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+
+    .score {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .answer-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    .answer-table th,
+    .answer-table td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .writing-response {
+      white-space: pre-wrap;
+      line-height: 1.6;
+      padding: 16px;
+      background: #f7f7f7;
+      border-radius: 6px;
+      margin-top: 10px;
+    }
+
+    .muted {
+      color: #666;
+    }
+
+    .error {
+      color: #a00;
+    }
+  </style>
+</head>
+<body>
+
+  <a class="back-link" href="/admin/">? All submissions</a>
+
+  <div id="status">Loading candidate results...</div>
+  <main id="results" hidden></main>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const submissionId = params.get("id");
+
+    async function loadSubmission() {
+      const status = document.getElementById("status");
+      const results = document.getElementById("results");
+
+      if (!submissionId) {
+        status.className = "error";
+        status.textContent = "No submission ID supplied.";
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `/api/submissions?id=${encodeURIComponent(submissionId)}`,
+          { cache: "no-store" }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          throw new Error(data.error || "Unable to load submission");
+        }
+
+        renderSubmission(data.submission);
+
+        status.hidden = true;
+        results.hidden = false;
+      } catch (err) {
+        status.className = "error";
+        status.textContent = `Could not load submission: ${err.message}`;
+      }
+    }
+
+    function renderSubmission(s) {
+      const results = document.getElementById("results");
+
+      results.innerHTML = `
+        <section class="candidate-header">
+          <h1>${escapeHtml(s.candidate?.name || "Candidate")}</h1>
+          <p><strong>Email:</strong> ${escapeHtml(s.candidate?.email || "�")}</p>
+          <p><strong>WhatsApp:</strong> ${escapeHtml(s.candidate?.whatsapp || "�")}</p>
+          <p><strong>Submitted:</strong> ${escapeHtml(s.created_at || "�")}</p>
+          <p><strong>Status:</strong> ${escapeHtml(s.status || "�")}</p>
+        </section>
+
+        <section class="result-section">
+          <h2>Reading</h2>
+          <div class="score">${formatScore(s.reading?.score, s.reading?.total)}</div>
+          ${renderIncorrect(s.reading?.incorrect)}
+        </section>
+
+        <section class="result-section">
+          <h2>Listening</h2>
+          <div class="score">${formatScore(s.listening?.score, s.listening?.total)}</div>
+          ${renderIncorrect(s.listening?.incorrect)}
+        </section>
+
+        <section class="result-section">
+          <h2>Writing</h2>
+          ${renderWriting(s.writing?.answers)}
+        </section>
+
+        <section class="result-section">
+          <h2>Examiner note</h2>
+          <div class="writing-response">${escapeHtml(s.examiner_note || "No examiner note yet.")}</div>
+        </section>
+      `;
+    }
+
+    function renderIncorrect(items) {
+      if (!Array.isArray(items)) {
+        return '<p class="muted">No automatic scoring data available.</p>';
+      }
+
+      if (items.length === 0) {
+        return '<p>No incorrect answers.</p>';
+      }
+
+      const rows = items.map(item => `
+        <tr>
+          <td>${escapeHtml(item.q)}</td>
+          <td>${escapeHtml(item.your ?? "")}</td>
+          <td>${escapeHtml(formatCorrect(item.correct))}</td>
+        </tr>
+      `).join("");
+
+      return `
+        <table class="answer-table">
+          <thead>
+            <tr>
+              <th>Question</th>
+              <th>Candidate answer</th>
+              <th>Correct answer</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    function renderWriting(writing) {
+      if (!writing) {
+        return '<p class="muted">No Writing submission available.</p>';
+      }
+
+      const task1 = findWritingAnswer(writing, "task1");
+      const task2 = findWritingAnswer(writing, "task2");
+
+      return `
+        <h3>Task 1</h3>
+        <div class="writing-response">${escapeHtml(task1 || "No response submitted.")}</div>
+
+        <h3>Task 2</h3>
+        <div class="writing-response">${escapeHtml(task2 || "No response submitted.")}</div>
+      `;
+    }
+
+    function findWritingAnswer(writing, task) {
+      if (!writing || typeof writing !== "object") return "";
+
+      const taskData = writing[task];
+
+      if (taskData && typeof taskData.answer === "string") {
+        return taskData.answer;
+      }
+
+      return "";
+    }
+
+    function formatCorrect(value) {
+      if (Array.isArray(value)) return value.join(" / ");
+      return value ?? "";
+    }
+
+    function formatScore(score, total) {
+      if (score === null || score === undefined) {
+        return "Not scored";
+      }
+
+      return `${score} / ${total ?? 40}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    loadSubmission();
+  </script>
+
+</body>
+</html>
