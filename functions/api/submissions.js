@@ -3,8 +3,6 @@ export async function onRequestGet({ request, env }) {
     const url = new URL(request.url);
     const submissionId = url.searchParams.get("id");
 
-    const submissionId = url.searchParams.get("id");
-
     if (!submissionId) {
       const result = await env.DB.prepare(
         `SELECT
@@ -46,6 +44,8 @@ export async function onRequestGet({ request, env }) {
          s.listening_incorrect_json,
 
          s.writing_answers_json,
+         s.writing_task1_assessment_json,
+        s.writing_task2_assessment_json,
 
          l.name,
          l.email,
@@ -89,7 +89,9 @@ export async function onRequestGet({ request, env }) {
         },
 
         writing: {
-          answers: safeParse(row.writing_answers_json)
+          answers: safeParse(row.writing_answers_json),
+          task1_assessment: safeParse(row.writing_task1_assessment_json),
+          task2_assessment: safeParse(row.writing_task2_assessment_json)
         }
       }
     });

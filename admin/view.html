@@ -132,7 +132,10 @@
 
         <section class="result-section">
           <h2>Writing</h2>
-          ${renderWriting(s.writing?.answers)}
+          ${renderWriting(s.writing?.answers,
+            s.writing?.task1_assessment,
+            s.writing?.task2_assessment
+          )}
         </section>
 
         <section class="result-section">
@@ -173,7 +176,7 @@
       `;
     }
 
-    function renderWriting(writing) {
+    function renderWriting(writing, task1Assessment, task2Assessment) {
       if (!writing) {
         return '<p class="muted">No Writing submission available.</p>';
       }
@@ -184,9 +187,50 @@
       return `
         <h3>Task 1</h3>
         <div class="writing-response">${escapeHtml(task1 || "No response submitted.")}</div>
+        ${renderWritingAssessment(task1Assessment)}
 
         <h3>Task 2</h3>
         <div class="writing-response">${escapeHtml(task2 || "No response submitted.")}</div>
+        ${renderWritingAssessment(task2Assessment)}
+      `;
+    }
+
+    function renderWritingAssessment(assessment) {
+      if (!assessment) {
+        return '<p class="muted">No AI assessment available.</p>';
+      }
+
+      return `
+        <div class="writing-response">
+          <strong>AI-estimated band: ${escapeHtml(assessment.overallBand ?? "N/A")}</strong><br><br>
+
+          ${escapeHtml(assessment.taskLabel || "Task score")}:
+          ${escapeHtml(assessment.taskScore ?? "N/A")}<br>
+
+          Coherence &amp; Cohesion:
+          ${escapeHtml(assessment.coherence ?? "N/A")}<br>
+
+          Lexical Resource:
+          ${escapeHtml(assessment.vocabulary ?? "N/A")}<br>
+
+          Grammatical Range &amp; Accuracy:
+          ${escapeHtml(assessment.grammar ?? "N/A")}<br><br>
+
+          <strong>Overall feedback</strong><br>
+          ${escapeHtml(assessment.summary || "No feedback available.")}<br><br>
+
+          <strong>${escapeHtml(assessment.taskLabel || "Task")} feedback</strong><br>
+          ${escapeHtml(assessment.taskComment || "No feedback available.")}<br><br>
+
+          <strong>Coherence &amp; Cohesion feedback</strong><br>
+          ${escapeHtml(assessment.coherenceComment || "No feedback available.")}<br><br>
+
+          <strong>Lexical Resource feedback</strong><br>
+          ${escapeHtml(assessment.vocabComment || "No feedback available.")}<br><br>
+
+          <strong>Grammar feedback</strong><br>
+          ${escapeHtml(assessment.grammarComment || "No feedback available.")}
+        </div>
       `;
     }
 

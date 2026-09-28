@@ -67,6 +67,45 @@ export async function onRequest({ request, env }) {
       ? incomingSpeaking
       : safeParse(existing?.speaking_meta_json, { part1: null, part2: null, part3: null });
 
+    // ---------- AI Writing assessment ----------
+    let writingTask1AssessmentJson = null;
+    let writingTask2AssessmentJson = null;
+
+    if (hasContent(incomingWriting) && writingObj?.completed) {
+      const task1 = writingObj.task1;
+      const task2 = writingObj.task2;
+
+      if (task1?.prompt && task1?.answer?.trim()) {
+        try {
+          const assessment = await evaluateWritingWithAI(
+            "task1",
+            task1.prompt,
+            task1.answer,
+            env
+          );
+
+          writingTask1AssessmentJson = JSON.stringify(assessment);
+        } catch (error) {
+          console.error("Task 1 AI assessment failed:", error);
+        }
+      }
+
+      if (task2?.prompt && task2?.answer?.trim()) {
+        try {
+          const assessment = await evaluateWritingWithAI(
+            "task2",
+            task2.prompt,
+            task2.answer,
+            env
+          );
+
+          writingTask2AssessmentJson = JSON.stringify(assessment);
+        } catch (error) {
+          console.error("Task 2 AI assessment failed:", error);
+        }
+      }
+    }
+
     const readingJson = JSON.stringify(readingObj);
     const listeningJson = JSON.stringify(listeningObj);
     const writingJson = JSON.stringify(writingObj);
@@ -126,7 +165,9 @@ export async function onRequest({ request, env }) {
         reading_incorrect_json,
         listening_score,
         listening_total,
-        listening_incorrect_json
+        listening_incorrect_json,
+        writing_task1_assessment_json,
+        writing_task2_assessment_json
       FROM submissions
       WHERE id = ?`
     ).bind(submissionId).first();
@@ -138,14 +179,24 @@ export async function onRequest({ request, env }) {
     const finalListeningTotal = (listeningTotal !== null) ? listeningTotal : (existingScoreRow?.listening_total ?? null);
     const finalListeningIncorrectJson = (listeningIncorrectJson !== null) ? listeningIncorrectJson : (existingScoreRow?.listening_incorrect_json ?? null);
 
+    const finalWritingTask1AssessmentJson =
+      (writingTask1AssessmentJson !== null)
+        ? writingTask1AssessmentJson
+        : (existingScoreRow?.writing_task1_assessment_json ?? null);
+
+    const finalWritingTask2AssessmentJson =
+      (writingTask2AssessmentJson !== null)
+        ? writingTask2AssessmentJson
+        : (existingScoreRow?.writing_task2_assessment_json ?? null);
 
     await env.DB.prepare(
       `INSERT INTO submissions
         (id, lead_id, user_agent,
          reading_answers_json, listening_answers_json, writing_answers_json, speaking_meta_json,
          reading_score, reading_total, reading_incorrect_json,
-         listening_score, listening_total, listening_incorrect_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         listening_score, listening_total, listening_incorrect_json,
+         writing_task1_assessment_json, writing_task2_assessment_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
          lead_id = excluded.lead_id,
          user_agent = excluded.user_agent,
@@ -158,13 +209,16 @@ export async function onRequest({ request, env }) {
          reading_incorrect_json = excluded.reading_incorrect_json,
          listening_score = excluded.listening_score,
          listening_total = excluded.listening_total,
-         listening_incorrect_json = excluded.listening_incorrect_json
+         listening_incorrect_json = excluded.listening_incorrect_json,
+         writing_task1_assessment_json = excluded.writing_task1_assessment_json,
+         writing_task2_assessment_json = excluded.writing_task2_assessment_json
       `
     ).bind(
       submissionId, leadId, ua,
       readingJson, listeningJson, writingJson, speakingMetaJson,
       finalReadingScore, finalReadingTotal, finalIncorrectJson,
-      finalListeningScore, finalListeningTotal, finalListeningIncorrectJson
+      finalListeningScore, finalListeningTotal, finalListeningIncorrectJson,
+      finalWritingTask1AssessmentJson, finalWritingTask2AssessmentJson
     ).run();
 
     // ---------- History / audit ----------
@@ -465,4 +519,116 @@ function scoreListening40(a) {
 
 function normalizeWord(s) {
   return (s || "").toString().trim().toLowerCase();
+}
+
+async function evaluateWritingWithAI(taskType, question, essay, env) {
+  const taskLabel = taskType === "task1"
+    ? "Task Achievement"
+    : "Task Response";
+
+  const wordCount = essay
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .length;
+
+  const prompt = `
+You are an IELTS Writing examiner.
+
+Evaluate the candidate's writing based on IELTS Writing criteria.
+
+Task Type: ${taskType === "task1" ? "Task 1" : "Task 2"}
+
+Question:
+"${question}"
+
+Candidate Response:
+"${essay}"
+
+Word count: ${wordCount}
+
+Use IELTS Writing band descriptors (0-9).
+
+For Task 1, use:
+- Task Achievement
+- Coherence & Cohesion
+- Lexical Resource
+- Grammatical Range & Accuracy
+
+For Task 2, use:
+- Task Response
+- Coherence & Cohesion
+- Lexical Resource
+- Grammatical Range & Accuracy
+
+Return ONLY valid JSON in this exact format:
+{
+  "overallBand": 6.5,
+  "taskLabel": "${taskLabel}",
+  "taskScore": 6.5,
+  "coherence": 6.5,
+  "vocabulary": 6.5,
+  "grammar": 6.5,
+  "summary": "Short overall comment",
+  "taskComment": "Detailed feedback on task fulfilment",
+  "coherenceComment": "Detailed feedback on organization and cohesion",
+  "vocabComment": "Detailed feedback on vocabulary",
+  "grammarComment": "Detailed feedback on grammar",
+  "vocabRepetition": ["word1", "word2"],
+  "vocabLevel": "B2"
+}
+
+Rules:
+- Be realistic, not overly harsh
+- Consider word count and task completion
+- Do not over-reward incomplete responses
+- Give IELTS-style practical feedback with maximum 3 example sentences
+`;
+
+  const response = await fetch(
+    "https://api.openai.com/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are a fair IELTS Writing evaluator. Return only valid JSON."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.1
+      })
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(`OpenAI Writing evaluation failed: ${JSON.stringify(data)}`);
+  }
+
+  const assessment = JSON.parse(data.choices[0].message.content);
+
+  for (const field of [
+    "overallBand",
+    "taskScore",
+    "coherence",
+    "vocabulary",
+    "grammar"
+  ]) {
+    if (typeof assessment[field] === "number") {
+      assessment[field] = Math.round(assessment[field] * 2) / 2;
+    }
+  }
+
+  return assessment;
 }
