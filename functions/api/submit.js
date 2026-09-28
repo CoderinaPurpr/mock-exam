@@ -72,7 +72,7 @@ export async function onRequest({ request, env }) {
     const writingJson = JSON.stringify(writingObj);
     const speakingMetaJson = JSON.stringify(speakingMetaObj);
 
-    // ---------- Server-side reading scoring (13Q key) ----------
+    // ---------- Server-side Reading scoring (40 questions) ----------
     let readingScore = null;
     let readingTotal = null;
     let readingIncorrectJson = null;
@@ -95,22 +95,57 @@ export async function onRequest({ request, env }) {
     readingIncorrectJson = JSON.stringify(scored.incorrect);
   }
 
+    // ---------- Server-side Listening scoring (40 questions) ----------
+    let listeningScore = null;
+    let listeningTotal = null;
+    let listeningIncorrectJson = null;
+
+    const listeningAnswers = {};
+
+    if (listeningObj?.sections && typeof listeningObj.sections === "object") {
+      for (const section of Object.values(listeningObj.sections)) {
+        if (section?.answers && typeof section.answers === "object") {
+          Object.assign(listeningAnswers, section.answers);
+        }
+      }
+    }
+
+    if (Object.keys(listeningAnswers).length > 0) {
+      const scored = scoreListening40(listeningAnswers);
+      listeningScore = scored.score;
+      listeningTotal = scored.total;
+      listeningIncorrectJson = JSON.stringify(scored.incorrect);
+    }
+
     // ---------- Upsert submission (merge-safe) ----------
     // IMPORTANT: We do not overwrite score fields unless we computed them now.
     const existingScoreRow = await env.DB.prepare(
-      `SELECT reading_score, reading_total, reading_incorrect_json FROM submissions WHERE id = ?`
+      `SELECT
+        reading_score,
+        reading_total,
+        reading_incorrect_json,
+        listening_score,
+        listening_total,
+        listening_incorrect_json
+      FROM submissions
+      WHERE id = ?`
     ).bind(submissionId).first();
 
     const finalReadingScore = (readingScore !== null) ? readingScore : (existingScoreRow?.reading_score ?? null);
     const finalReadingTotal = (readingTotal !== null) ? readingTotal : (existingScoreRow?.reading_total ?? null);
     const finalIncorrectJson = (readingIncorrectJson !== null) ? readingIncorrectJson : (existingScoreRow?.reading_incorrect_json ?? null);
+    const finalListeningScore = (listeningScore !== null) ? listeningScore : (existingScoreRow?.listening_score ?? null);
+    const finalListeningTotal = (listeningTotal !== null) ? listeningTotal : (existingScoreRow?.listening_total ?? null);
+    const finalListeningIncorrectJson = (listeningIncorrectJson !== null) ? listeningIncorrectJson : (existingScoreRow?.listening_incorrect_json ?? null);
+
 
     await env.DB.prepare(
       `INSERT INTO submissions
         (id, lead_id, user_agent,
          reading_answers_json, listening_answers_json, writing_answers_json, speaking_meta_json,
-         reading_score, reading_total, reading_incorrect_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         reading_score, reading_total, reading_incorrect_json,
+         listening_score, listening_total, listening_incorrect_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
          lead_id = excluded.lead_id,
          user_agent = excluded.user_agent,
@@ -120,12 +155,16 @@ export async function onRequest({ request, env }) {
          speaking_meta_json = excluded.speaking_meta_json,
          reading_score = excluded.reading_score,
          reading_total = excluded.reading_total,
-         reading_incorrect_json = excluded.reading_incorrect_json
+         reading_incorrect_json = excluded.reading_incorrect_json,
+         listening_score = excluded.listening_score,
+         listening_total = excluded.listening_total,
+         listening_incorrect_json = excluded.listening_incorrect_json
       `
     ).bind(
       submissionId, leadId, ua,
       readingJson, listeningJson, writingJson, speakingMetaJson,
-      finalReadingScore, finalReadingTotal, finalIncorrectJson
+      finalReadingScore, finalReadingTotal, finalIncorrectJson,
+      finalListeningScore, finalListeningTotal, finalListeningIncorrectJson
     ).run();
 
     // ---------- History / audit ----------
@@ -147,7 +186,9 @@ export async function onRequest({ request, env }) {
       ok: true,
       submission_id: submissionId,
       reading_score: finalReadingScore,
-      reading_total: finalReadingTotal
+      reading_total: finalReadingTotal,
+      listening_score: finalListeningScore,
+      listening_total: finalListeningTotal
     });
   } catch (err) {
     return json({ ok: false, error: "Server error", detail: String(err) }, 500);
@@ -291,6 +332,136 @@ function scoreReading40(a) {
 
   return { score, total, incorrect };
 }
+
+// ------------------------------
+// Listening key (40 questions)
+// ------------------------------
+function scoreListening40(a) {
+  const key = {
+    q1: "Canadian",
+    q2: "furniture",
+    q3: "Park",
+    q4: ["250", "250 sterling"],
+    q5: "phone",
+    q6: ["10 September", "10th September"],
+    q7: "museum",
+    q8: "time",
+    q9: ["blond", "blonde"],
+    q10: "8795482361",
+
+    q15: "B",
+    q16: "B",
+    q17: "C",
+    q18: "A",
+    q19: "A",
+    q20: "C",
+
+    q21: "B",
+    q22: "A",
+    q23: "C",
+    q24: "B",
+    q25: "A",
+    q26: "B",
+    q27: "A",
+    q28: "F",
+    q29: "G",
+    q30: "C",
+
+    q31: "industry",
+    q32: "constant",
+    q33: "direction",
+    q34: "floor",
+    q35: "predictable",
+    q36: "bay",
+    q37: "gates",
+    q38: "fuel",
+    q39: "jobs",
+    q40: "migration"
+  };
+
+  const total = 40;
+  let score = 0;
+  const incorrect = [];
+
+  function matches(yourRaw, accepted, questionNumber) {
+    let your = (yourRaw ?? "").toString().trim();
+
+    // Q10 is a phone number: ignore spaces.
+    if (questionNumber === 10) {
+      your = your.replace(/\s+/g, "");
+    } else {
+      your = normalizeWord(your);
+    }
+
+    const answers = Array.isArray(accepted) ? accepted : [accepted];
+
+    return answers.some(answer => {
+      let correct = answer.toString();
+
+      if (questionNumber === 10) {
+        correct = correct.replace(/\s+/g, "");
+        return your === correct;
+      }
+
+      return your === normalizeWord(correct);
+    });
+  }
+
+  function scoreQuestion(q) {
+    const your = (a[`q${q}`] ?? "").toString().trim();
+    const correct = key[`q${q}`];
+
+    if (matches(your, correct, q)) {
+      score++;
+    } else {
+      incorrect.push({ q, your, correct });
+    }
+  }
+
+  function scoreEitherOrderPair(q1, q2, correctAnswers) {
+    const yourAnswers = [
+      (a[`q${q1}`] ?? "").toString().trim().toUpperCase(),
+      (a[`q${q2}`] ?? "").toString().trim().toUpperCase()
+    ];
+
+    const remaining = correctAnswers.map(x => x.toUpperCase());
+
+    for (let index = 0; index < yourAnswers.length; index++) {
+      const your = yourAnswers[index];
+      const matchIndex = remaining.indexOf(your);
+
+      if (matchIndex !== -1) {
+        score++;
+        remaining.splice(matchIndex, 1);
+      } else {
+        incorrect.push({
+          q: index === 0 ? q1 : q2,
+          your,
+          correct: `${correctAnswers.join(" / ")} (either order)`
+        });
+      }
+    }
+  }
+
+  // Questions 1–10
+  for (let q = 1; q <= 10; q++) {
+    scoreQuestion(q);
+  }
+
+  // Questions 11–12: A and C in either order
+  scoreEitherOrderPair(11, 12, ["A", "C"]);
+
+  // Questions 13–14: B and E in either order
+  scoreEitherOrderPair(13, 14, ["B", "E"]);
+
+  // Questions 15–40
+  for (let q = 15; q <= 40; q++) {
+    scoreQuestion(q);
+  }
+
+  return { score, total, incorrect };
+}
+
 
 function normalizeWord(s) {
   return (s || "").toString().trim().toLowerCase();
