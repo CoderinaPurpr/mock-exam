@@ -77,17 +77,23 @@ export async function onRequest({ request, env }) {
     let readingTotal = null;
     let readingIncorrectJson = null;
 
-    // Expecting readingObj.answers = { q1: "...", q5: "TRUE", ... }
-    const readingAnswers = readingObj?.answers;
-    if (readingAnswers && typeof readingAnswers === "object") {
-      const scored = scoreReading13(readingAnswers);
-      readingScore = scored.score;
-      readingTotal = scored.total;
-      readingIncorrectJson = JSON.stringify(scored.incorrect);
-    } else {
-      // If we didn't receive reading this time, keep existing score/incorrect if present
-      // (No extra read needed; leaving null will not overwrite due to merge logic below.)
+// Current Reading format stores answers inside passages.
+  const readingAnswers = {};
+
+  if (readingObj?.passages && typeof readingObj.passages === "object") {
+    for (const passage of Object.values(readingObj.passages)) {
+      if (passage?.answers && typeof passage.answers === "object") {
+        Object.assign(readingAnswers, passage.answers);
+      }
     }
+  }
+
+  if (Object.keys(readingAnswers).length > 0) {
+    const scored = scoreReading40(readingAnswers);
+    readingScore = scored.score;
+    readingTotal = scored.total;
+    readingIncorrectJson = JSON.stringify(scored.incorrect);
+  }
 
     // ---------- Upsert submission (merge-safe) ----------
     // IMPORTANT: We do not overwrite score fields unless we computed them now.
@@ -173,9 +179,9 @@ function json(obj, status = 200) {
 }
 
 // ------------------------------
-// Reading key (13 questions)
+// Reading key (40 questions)
 // ------------------------------
-function scoreReading13(a) {
+function scoreReading40(a) {
   const key = {
     q1: "oval",
     q2: "husk",
@@ -189,28 +195,98 @@ function scoreReading13(a) {
     q10: "lime",
     q11: "Run",
     q12: "Mauritius",
-    q13: "tsunami"
+    q13: "tsunami",
+    q14: "C",
+    q15: "B",
+    q16: "E",
+    q17: "G",
+    q18: "D",
+    q19: "human error",
+    q20: ["car sharing", "car-sharing"],
+    q21: "ownership",
+    q22: "mileage",
+    q27: "A",
+    q28: "C",
+    q29: "C",
+    q30: "D",
+    q31: "A",
+    q32: "B",
+    q33: "E",
+    q34: "A",
+    q35: "D",
+    q36: "E",
+    q37: "B",
+    q38: ["expeditions", "unique expeditions"],
+    q39: ["uncontacted", "isolated"],
+    q40: ["surface", "land surface"]
   };
 
-  const total = 13;
+  const total = 40;
   let score = 0;
   const incorrect = [];
 
-  for (let i = 1; i <= 13; i++) {
+  function matches(yourRaw, accepted) {
+    const your = normalizeWord((yourRaw ?? "").toString());
+
+    const answers = Array.isArray(accepted) ? accepted : [accepted];
+    return answers.some(answer => your === normalizeWord(answer));
+  }
+
+  // Questions 1–22
+  for (let i = 1; i <= 22; i++) {
     const k = `q${i}`;
+    const your = (a[k] ?? "").toString().trim();
     const correct = key[k];
 
-    const yourRaw = a[k];
-    const your = (yourRaw ?? "").toString().trim();
+    if (matches(your, correct)) {
+      score++;
+    } else {
+      incorrect.push({ q: i, your, correct });
+    }
+  }
 
-    const isWord = [1,2,3,4,8,9,10,11,12,13].includes(i);
+  // Questions 23–24: C and D in either order
+  scoreEitherOrderPair(a, 23, 24, ["C", "D"]);
 
-    const ok = isWord
-      ? normalizeWord(your) === normalizeWord(correct)
-      : your === correct;
+  // Questions 25–26: A and E in either order
+  scoreEitherOrderPair(a, 25, 26, ["A", "E"]);
 
-    if (ok) score++;
-    else incorrect.push({ q: i, your, correct });
+  // Questions 27–40
+  for (let i = 27; i <= 40; i++) {
+    const k = `q${i}`;
+    const your = (a[k] ?? "").toString().trim();
+    const correct = key[k];
+
+    if (matches(your, correct)) {
+      score++;
+    } else {
+      incorrect.push({ q: i, your, correct });
+    }
+  }
+
+  function scoreEitherOrderPair(a, q1, q2, correctAnswers) {
+    const yourAnswers = [
+      (a[`q${q1}`] ?? "").toString().trim().toUpperCase(),
+      (a[`q${q2}`] ?? "").toString().trim().toUpperCase()
+    ];
+
+    const remaining = correctAnswers.map(x => x.toUpperCase());
+
+    for (let index = 0; index < yourAnswers.length; index++) {
+      const your = yourAnswers[index];
+      const matchIndex = remaining.indexOf(your);
+
+      if (matchIndex !== -1) {
+        score++;
+        remaining.splice(matchIndex, 1);
+      } else {
+        incorrect.push({
+          q: index === 0 ? q1 : q2,
+          your,
+          correct: `${correctAnswers.join(" / ")} (either order)`
+        });
+      }
+    }
   }
 
   return { score, total, incorrect };
