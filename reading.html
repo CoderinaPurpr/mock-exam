@@ -106,7 +106,6 @@
           <div class="notice">
             Time left: <strong id="timeLeft">60:00</strong>
           </div>
-          <button id="submitBtn" class="btn hidden" type="button">Finish Reading</button>
         </div>
       </div>
 
@@ -230,7 +229,6 @@
 
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
-    const submitBtn = document.getElementById("submitBtn");
 	
 	  // =========================
 	  // Highlighter
@@ -1033,11 +1031,6 @@ function saveCurrentPassageAnswers() {
     // ============================================================
     // SUBMIT (same pattern you used elsewhere)
     // ============================================================
-    submitBtn.addEventListener("click", () => {
-     saveCurrentPassageAnswers();
-     window.location.href = "/listening.html";
-    });
-
 
     async function submitReadingAndGoNext() {
       topMsg.textContent = "";
@@ -1047,14 +1040,15 @@ function saveCurrentPassageAnswers() {
         return;
       }
 
+      const originalButtonText = nextBtn.textContent;
+      nextBtn.disabled = true;
+      nextBtn.textContent = "Submitting...";
+
 
       // Save current before submit
       saveCurrentPassageAnswers();
 
       const a = loadAnswers();
-      a.completed = true;
-      a.completed_at = new Date().toISOString();
-      saveAnswers(a);
 
       const payload = {
         submission_id: submissionId,
@@ -1078,13 +1072,20 @@ function saveCurrentPassageAnswers() {
         const text = await res.text();
         if (!res.ok) {
           topMsg.textContent = "Submit failed: " + text;
+          nextBtn.disabled = false;
+          nextBtn.textContent = originalButtonText;
           return;
         }
-      } catch (e) {
-        console.error(e);
-        topMsg.textContent = "Network error submitting. Please try again.";
-        return;
-      }
+          a.completed = true;
+          a.completed_at = new Date().toISOString();
+          saveAnswers(a);
+        } catch (e) {
+          console.error(e);
+          topMsg.textContent = "Network error submitting. Please try again.";
+          nextBtn.disabled = false;
+          nextBtn.textContent = originalButtonText;
+          return;
+        }
 
       // Next step in your flow (change if your next page differs)
       window.location.assign("/listening.html");
