@@ -54,6 +54,48 @@
       margin-top: 10px;
     }
 
+    .ai-assessment {
+      margin-top: 14px;
+      padding: 16px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .ai-band {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .ai-scores {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(180px, 1fr));
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .ai-score {
+      padding: 10px 12px;
+      background: #f7f7f7;
+      border-radius: 6px;
+    }
+
+    .ai-feedback {
+      margin-top: 12px;
+      line-height: 1.6;
+    }
+
+    .ai-feedback p {
+      margin: 4px 0 14px;
+    }
+
+    @media (max-width: 650px) {
+      .ai-scores {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .muted {
       color: #666;
     }
@@ -65,7 +107,7 @@
 </head>
 <body>
 
-  <a class="back-link" href="/admin/">? All submissions</a>
+  <a class="back-link" href="/admin/">&larr; All submissions</a>
 
   <div id="status">Loading candidate results...</div>
   <main id="results" hidden></main>
@@ -200,36 +242,52 @@
         return '<p class="muted">No AI assessment available.</p>';
       }
 
+      const taskLabel = assessment.taskLabel || "Task score";
+
       return `
-        <div class="writing-response">
-          <strong>AI-estimated band: ${escapeHtml(assessment.overallBand ?? "N/A")}</strong><br><br>
+        <div class="ai-assessment">
+          <div class="ai-band">
+            AI-estimated band: ${escapeHtml(assessment.overallBand ?? "N/A")}
+          </div>
 
-          ${escapeHtml(assessment.taskLabel || "Task score")}:
-          ${escapeHtml(assessment.taskScore ?? "N/A")}<br>
+          <div class="ai-scores">
+            <div class="ai-score">
+              <strong>${escapeHtml(taskLabel)}</strong><br>
+              ${escapeHtml(assessment.taskScore ?? "N/A")}
+            </div>
 
-          Coherence &amp; Cohesion:
-          ${escapeHtml(assessment.coherence ?? "N/A")}<br>
+            <div class="ai-score">
+              <strong>Coherence &amp; Cohesion</strong><br>
+              ${escapeHtml(assessment.coherence ?? "N/A")}
+            </div>
 
-          Lexical Resource:
-          ${escapeHtml(assessment.vocabulary ?? "N/A")}<br>
+            <div class="ai-score">
+              <strong>Lexical Resource</strong><br>
+              ${escapeHtml(assessment.vocabulary ?? "N/A")}
+            </div>
 
-          Grammatical Range &amp; Accuracy:
-          ${escapeHtml(assessment.grammar ?? "N/A")}<br><br>
+            <div class="ai-score">
+              <strong>Grammatical Range &amp; Accuracy</strong><br>
+              ${escapeHtml(assessment.grammar ?? "N/A")}
+            </div>
+          </div>
 
-          <strong>Overall feedback</strong><br>
-          ${escapeHtml(assessment.summary || "No feedback available.")}<br><br>
+          <div class="ai-feedback">
+            <strong>Overall feedback</strong>
+            <p>${escapeHtml(assessment.summary || "No feedback available.")}</p>
 
-          <strong>${escapeHtml(assessment.taskLabel || "Task")} feedback</strong><br>
-          ${escapeHtml(assessment.taskComment || "No feedback available.")}<br><br>
+            <strong>${escapeHtml(taskLabel)} feedback</strong>
+            <p>${escapeHtml(assessment.taskComment || "No feedback available.")}</p>
 
-          <strong>Coherence &amp; Cohesion feedback</strong><br>
-          ${escapeHtml(assessment.coherenceComment || "No feedback available.")}<br><br>
+            <strong>Coherence &amp; Cohesion feedback</strong>
+            <p>${escapeHtml(assessment.coherenceComment || "No feedback available.")}</p>
 
-          <strong>Lexical Resource feedback</strong><br>
-          ${escapeHtml(assessment.vocabComment || "No feedback available.")}<br><br>
+            <strong>Lexical Resource feedback</strong>
+            <p>${escapeHtml(assessment.vocabComment || "No feedback available.")}</p>
 
-          <strong>Grammar feedback</strong><br>
-          ${escapeHtml(assessment.grammarComment || "No feedback available.")}
+            <strong>Grammar feedback</strong>
+            <p>${escapeHtml(assessment.grammarComment || "No feedback available.")}</p>
+          </div>
         </div>
       `;
     }
