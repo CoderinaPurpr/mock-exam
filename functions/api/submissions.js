@@ -13,6 +13,8 @@ export async function onRequestGet({ request, env }) {
           s.reading_total,
           s.listening_score,
           s.listening_total,
+          s.writing_task1_assessment_json,
+          s.writing_task2_assessment_json,
           l.name,
           l.email
         FROM submissions s
@@ -20,9 +22,26 @@ export async function onRequestGet({ request, env }) {
         ORDER BY s.created_at DESC`
       ).all();
 
+      const submissions = (result.results || []).map((row) => {
+        const task1 = safeParse(row.writing_task1_assessment_json);
+        const task2 = safeParse(row.writing_task2_assessment_json);
+
+        const {
+          writing_task1_assessment_json,
+          writing_task2_assessment_json,
+          ...submission
+        } = row;
+
+        return {
+          ...submission,
+          writing_task1_ai_band: task1?.overallBand ?? null,
+          writing_task2_ai_band: task2?.overallBand ?? null
+        };
+      });
+
       return json({
         ok: true,
-        submissions: result.results || []
+        submissions
       });
     }
 
