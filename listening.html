@@ -130,7 +130,6 @@
 
     <p class="muted">
       You can play each section audio <strong>only once</strong>.
-      When the test ends, you will get <strong>2 minutes</strong> to check and change your answers.
     </p>
 
     <div id="topMsg" class="error" style="min-height:1.2em;"></div>
@@ -150,10 +149,6 @@
       <div class="row">
         <button id="playBtn" class="btn" type="button">Play Section Audio</button>
         <button id="resumeBtn" class="btn secondary hidden" type="button">Resume</button>
-
-        <div class="timerBar">
-          Review time: <span id="reviewTime">--:--</span>
-        </div>
       </div>
 
       <div class="spacer"></div>
@@ -170,7 +165,6 @@
 
       <div class="row">
         <button id="nextBtn" class="btn secondary" type="button" disabled>Next Section</button>
-      <!--  <span class="small">Next unlocks when the 2-minute review ends.</span> -->
       </div>
     </div>
 
@@ -201,7 +195,6 @@
     // Config
     // ============================================================
     const TEST_ID = "IELTS_LISTENING_T1";
-    const REVIEW_SECONDS = 2 * 60;
 
     const SECTIONS = [
       { idx: 1, title: "SECTION 1 (Questions 1–10)",  audioSrc: "/assets/listening/section1.mp3", qFrom: 1,  qTo: 10 },
@@ -215,7 +208,7 @@
     const lead = JSON.parse(localStorage.getItem("mock_lead") || "null");
 
     const KEY = {
-      STATE: `listening_state_${submissionId}`,          // { currentSection, reviewEndTsBySection, sectionAudio, lockedSections }
+      STATE: `listening_state_${submissionId}`,          // { currentSection, sectionAudio, lockedSections }
       ANSWERS: `mock_listening_answers_${submissionId}`, // { test_id, sections:{1:{answers...},...}, completed }
     };
 
@@ -232,7 +225,6 @@
     const resumeBtn = document.getElementById("resumeBtn");
     const nextBtn = document.getElementById("nextBtn");
 
-    const reviewTimeEl = document.getElementById("reviewTime");
 
     const audio = document.getElementById("audio");
     const audioProgress = document.getElementById("audioProgress");
@@ -248,7 +240,6 @@
         s = {
           currentSection: 1,
           sectionAudio: {},
-          reviewEndTsBySection: {},
           lockedSections: {}
         };
         saveState(s);
@@ -723,7 +714,7 @@ if (sectionIdx === 4) {
       const st = loadState();
       if (st.lockedSections[String(sectionIdx)]) {
         setSectionInputsDisabled(true);
-        qMsg.textContent = "This section is locked (review time ended).";
+        qMsg.textContent = "This section is complete and locked.";
       } else {
         setSectionInputsDisabled(false);
       }
@@ -744,9 +735,11 @@ if (sectionIdx === 4) {
       return `
         <div class="q">
           <p><strong>${qNum}</strong> ${label}</p>
-          <label class="opt"><input type="radio" name="q${qNum}" value="A"> A</label><br>
-          <label class="opt"><input type="radio" name="q${qNum}" value="B"> B</label><br>
-          <label class="opt"><input type="radio" name="q${qNum}" value="C"> C</label>
+          <div class="row">
+            <label class="opt"><input type="radio" name="q${qNum}" value="A"> A</label>
+            <label class="opt"><input type="radio" name="q${qNum}" value="B"> B</label>
+            <label class="opt"><input type="radio" name="q${qNum}" value="C"> C</label>
+          </div>
         </div>
       `;
     }
@@ -767,7 +760,15 @@ if (sectionIdx === 4) {
       return `
         <div class="q">
           <label><strong>${qNum}</strong> ${label}:<br>
-            <input type="text" id="q${qNum}" placeholder="A–G">
+            <input
+              type="text"
+              id="q${qNum}"
+              placeholder="A–G"
+              maxlength="1"
+              autocapitalize="characters"
+              style="text-transform: uppercase;"
+              oninput="this.value = this.value.toUpperCase();"
+            >
           </label>
         </div>
       `;
@@ -1058,12 +1059,18 @@ if (sectionIdx === 4) {
 		return;
 	  }
 
-	  // ✅ Section 4 only: do the 2-minute review timer
-	  saveState(st);
-	  startReviewTimer(secIdx);
+    // Section 4: finish immediately when the audio ends
+    saveState(st);
 
-	  playBtn.disabled = true;
-	  resumeBtn.classList.add("hidden");
+    setSectionInputsDisabled(true);
+    nextBtn.disabled = false;
+    nextBtn.textContent = "Finish Listening";
+
+    playBtn.disabled = true;
+    resumeBtn.classList.add("hidden");
+
+    qMsg.textContent = "Listening complete. Continue to Writing.";
+    updateStatusUI();
 	});
 
 	// ============================================================
@@ -1129,7 +1136,7 @@ if (sectionIdx === 4) {
 	  console.error(e);
 	  
 	
-	  // 🔴 IMPORTANT: revert "started" because audio never actually played
+	  // IMPORTANT: revert "started" because audio never actually played
 	  const st3 = loadState();
 	  const secIdx3 = getCurrentSectionIdx();
 	  const meta3 = st3.sectionAudio[String(secIdx3)] || {};
@@ -1157,90 +1164,13 @@ if (sectionIdx === 4) {
 	  if (!meta || !meta.started || meta.ended) return;
 
 	  try {
-		await seekWhenReady(meta.lastTime || 0);  // ✅ wait until seek completes
+		await seekWhenReady(meta.lastTime || 0);  // wait until seek completes
 		await audio.play();
 	  } catch (e) {
 		console.error(e);
 		topMsg.textContent = "Audio couldn’t resume. Try again.";
 	  }
 	});
-
-
-
-    // ============================================================
-    // Review timer (unchanged)
-    // ============================================================
-    let reviewTick = null;
-
-    function startReviewTimer(sectionIdx) {
-      const st = loadState();
-      if (!st.reviewEndTsBySection[String(sectionIdx)]) {
-        st.reviewEndTsBySection[String(sectionIdx)] = nowMs() + (REVIEW_SECONDS * 1000);
-        saveState(st);
-      }
-
-      setSectionInputsDisabled(false);
-      nextBtn.disabled = true;
-
-      if (reviewTick) clearInterval(reviewTick);
-      reviewTick = setInterval(() => {
-        renderReviewTime();
-        if (isReviewOver(sectionIdx)) {
-          clearInterval(reviewTick);
-          reviewTick = null;
-          finalizeSection(sectionIdx);
-        }
-      }, 250);
-
-      renderReviewTime();
-    }
-
-    function isReviewOver(sectionIdx) {
-      const st = loadState();
-      const endTs = st.reviewEndTsBySection[String(sectionIdx)] || 0;
-      return endTs > 0 && nowMs() >= endTs;
-    }
-
-    function renderReviewTime() {
-      const st = loadState();
-      const secIdx = getCurrentSectionIdx();
-      const endTs = st.reviewEndTsBySection[String(secIdx)] || 0;
-
-      if (!endTs) {
-        reviewTimeEl.textContent = "--:--";
-        reviewTimeEl.classList.remove("danger");
-        return;
-      }
-
-      const remaining = Math.max(0, Math.floor((endTs - nowMs()) / 1000));
-      reviewTimeEl.textContent = formatTime(remaining);
-      if (remaining <= 10) reviewTimeEl.classList.add("danger");
-      else reviewTimeEl.classList.remove("danger");
-    }
-
-    function finalizeSection(sectionIdx) {
-      saveSectionAnswers(sectionIdx);
-
-      const err = validateSectionAnswered(sectionIdx);
-      if (err) {
-        qMsg.textContent = err + " Please answer and wait for the timer to finish again.";
-        const st = loadState();
-        st.reviewEndTsBySection[String(sectionIdx)] = nowMs() + (15 * 1000);
-        saveState(st);
-        startReviewTimer(sectionIdx);
-        return;
-      }
-
-      const st = loadState();
-      st.lockedSections[String(sectionIdx)] = true;
-      saveState(st);
-
-      setSectionInputsDisabled(true);
-      nextBtn.disabled = false;
-
-      qMsg.textContent = "Section locked. You can continue.";
-      updateStatusUI();
-    }
 
     // ============================================================
     // Navigation / submit (unchanged)
@@ -1251,7 +1181,7 @@ if (sectionIdx === 4) {
       const secIdx = getCurrentSectionIdx();
 
       if (!st.lockedSections[String(secIdx)]) {
-        qMsg.textContent = "You can continue after the 2-minute review ends.";
+        qMsg.textContent = "Finish the section audio before continuing.";
         return;
       }
 
@@ -1331,15 +1261,18 @@ if (sectionIdx === 4) {
 
       const meta = st.sectionAudio[String(secIdx)] || {};
       if (meta.ended) {
-        if (st.reviewEndTsBySection[String(secIdx)] && !isReviewOver(secIdx) && !st.lockedSections[String(secIdx)]) {
-          startReviewTimer(secIdx);
+        if (!st.lockedSections[String(secIdx)]) {
+          st.lockedSections[String(secIdx)] = true;
+          saveState(st);
         }
-        if (st.reviewEndTsBySection[String(secIdx)] && isReviewOver(secIdx) && !st.lockedSections[String(secIdx)]) {
-          finalizeSection(secIdx);
+
+        setSectionInputsDisabled(true);
+        nextBtn.disabled = false;
+
+        if (secIdx === 4) {
+          nextBtn.textContent = "Finish Listening";
         }
-        if (st.lockedSections[String(secIdx)]) nextBtn.disabled = false;
       } else {
-        reviewTimeEl.textContent = "--:--";
         nextBtn.disabled = true;
       }
 
