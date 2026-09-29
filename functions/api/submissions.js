@@ -32,6 +32,12 @@ export async function onRequestGet({ request, env }) {
          s.created_at,
          s.status,
          s.examiner_note,
+         s.examiner_reading_band,
+         s.examiner_listening_band,
+         s.examiner_writing_task1_band,
+         s.examiner_writing_task2_band,
+         s.examiner_writing_band,
+         s.reviewed_at,
 
          s.reading_answers_json,
          s.reading_score,
@@ -68,6 +74,15 @@ export async function onRequestGet({ request, env }) {
         status: row.status,
         examiner_note: row.examiner_note,
 
+        examiner: {
+          reading_band: row.examiner_reading_band,
+          listening_band: row.examiner_listening_band,
+          writing_task1_band: row.examiner_writing_task1_band,
+          writing_task2_band: row.examiner_writing_task2_band,
+          writing_band: row.examiner_writing_band,
+          reviewed_at: row.reviewed_at
+        },
+
         candidate: {
           name: row.name,
           email: row.email,
@@ -101,6 +116,97 @@ export async function onRequestGet({ request, env }) {
       500
     );
   }
+}
+
+export async function onRequestPost({ request, env }) {
+  try {
+    const body = await request.json();
+
+    const submissionId = String(body.id || "").trim();
+
+    if (!submissionId) {
+      return json({ ok: false, error: "Submission ID is required" }, 400);
+    }
+
+    const readingBand = parseBand(body.reading_band);
+    const listeningBand = parseBand(body.listening_band);
+    const writingTask1Band = parseBand(body.writing_task1_band);
+    const writingTask2Band = parseBand(body.writing_task2_band);
+    const writingBand = parseBand(body.writing_band);
+
+    const bands = [
+      readingBand,
+      listeningBand,
+      writingTask1Band,
+      writingTask2Band,
+      writingBand
+    ];
+
+    if (bands.includes("invalid")) {
+      return json(
+        { ok: false, error: "Bands must be between 0 and 9 in 0.5 increments" },
+        400
+      );
+    }
+
+    const examinerNote =
+      typeof body.examiner_note === "string"
+        ? body.examiner_note.trim()
+        : null;
+
+    const result = await env.DB.prepare(
+      `UPDATE submissions
+       SET examiner_note = ?,
+           examiner_reading_band = ?,
+           examiner_listening_band = ?,
+           examiner_writing_task1_band = ?,
+           examiner_writing_task2_band = ?,
+           examiner_writing_band = ?,
+           reviewed_at = datetime('now'),
+           status = 'reviewed'
+       WHERE id = ?`
+    )
+      .bind(
+        examinerNote || null,
+        readingBand,
+        listeningBand,
+        writingTask1Band,
+        writingTask2Band,
+        writingBand,
+        submissionId
+      )
+      .run();
+
+    if (!result.meta?.changes) {
+      return json({ ok: false, error: "Submission not found" }, 404);
+    }
+
+    return json({ ok: true });
+  } catch (err) {
+    return json(
+      { ok: false, error: "Server error", detail: String(err) },
+      500
+    );
+  }
+}
+
+function parseBand(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const band = Number(value);
+
+  if (
+    !Number.isFinite(band) ||
+    band < 0 ||
+    band > 9 ||
+    Math.round(band * 2) !== band * 2
+  ) {
+    return "invalid";
+  }
+
+  return band;
 }
 
 function safeParse(value) {

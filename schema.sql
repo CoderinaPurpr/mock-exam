@@ -18,6 +18,12 @@ CREATE TABLE submissions (
   listening_incorrect_json TEXT,
   writing_task1_assessment_json TEXT,
   writing_task2_assessment_json TEXT,
+  examiner_reading_band REAL,
+  examiner_listening_band REAL,
+  examiner_writing_task1_band REAL,
+  examiner_writing_task2_band REAL,
+  examiner_writing_band REAL,
+  reviewed_at TEXT,
   FOREIGN KEY (lead_id) REFERENCES leads(id)
 );
 INSERT INTO "submissions" ("id","lead_id","created_at","user_agent","reading_answers_json","listening_answers_json","writing_answers_json","speaking_meta_json","status","examiner_note","reading_score","reading_total","reading_incorrect_json") VALUES('sub_a2bdd621-881f-4b12-bb3d-f5185e823667',1,'2026-01-21 09:49:45','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36','{"test_id":"IELTS11_R1_P1","seconds_left":948,"duration_seconds":1380,"answers":{"q1":"wrtq","q2":"wrereww","q3":"rewgrewg","q4":"wergewgr","q8":"ewrgwerg","q9":"ewrgewrg","q10":"ewrgewrg","q11":"wergewrg","q12":"wergwerg","q13":"wergwer","q5":"TRUE","q6":"FALSE","q7":"NOT GIVEN"}}','{}','{}','{"part1":null,"part2":null,"part3":null}','new',NULL,NULL,NULL,NULL);

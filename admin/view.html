@@ -187,10 +187,128 @@
         </section>
 
         <section class="result-section">
-          <h2>Examiner note</h2>
-          <div class="writing-response">${escapeHtml(s.examiner_note || "No examiner note yet.")}</div>
+          <h2>Examiner review</h2>
+
+          <form id="examinerReviewForm">
+            <div>
+              <label for="examinerReadingBand">Reading band</label>
+              <input
+                id="examinerReadingBand"
+                type="number"
+                min="0"
+                max="9"
+                step="0.5"
+                value="${s.examiner?.reading_band ?? ""}"
+              >
+            </div>
+
+            <div>
+              <label for="examinerListeningBand">Listening band</label>
+              <input
+                id="examinerListeningBand"
+                type="number"
+                min="0"
+                max="9"
+                step="0.5"
+                value="${s.examiner?.listening_band ?? ""}"
+              >
+            </div>
+
+            <div>
+              <label for="examinerWritingTask1Band">Writing Task 1 band</label>
+              <input
+                id="examinerWritingTask1Band"
+                type="number"
+                min="0"
+                max="9"
+                step="0.5"
+                value="${s.examiner?.writing_task1_band ?? ""}"
+              >
+            </div>
+
+            <div>
+              <label for="examinerWritingTask2Band">Writing Task 2 band</label>
+              <input
+                id="examinerWritingTask2Band"
+                type="number"
+                min="0"
+                max="9"
+                step="0.5"
+                value="${s.examiner?.writing_task2_band ?? ""}"
+              >
+            </div>
+
+            <div>
+              <label for="examinerWritingBand">Final Writing band</label>
+              <input
+                id="examinerWritingBand"
+                type="number"
+                min="0"
+                max="9"
+                step="0.5"
+                value="${s.examiner?.writing_band ?? ""}"
+              >
+            </div>
+
+            <div>
+              <label for="examinerNote">Examiner feedback</label>
+              <textarea id="examinerNote" rows="6">${escapeHtml(s.examiner_note || "")}</textarea>
+            </div>
+
+            <button type="submit">Save examiner review</button>
+            <span id="examinerSaveStatus" class="muted"></span>
+          </form>
         </section>
       `;
+
+      document
+        .getElementById("examinerReviewForm")
+        .addEventListener("submit", saveExaminerReview);
+    }
+
+    async function saveExaminerReview(event) {
+      event.preventDefault();
+
+      const status = document.getElementById("examinerSaveStatus");
+      const button = event.submitter;
+
+      status.textContent = "Saving...";
+
+      if (button) {
+        button.disabled = true;
+      }
+
+      try {
+        const response = await fetch("/api/submissions", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify({
+            id: submissionId,
+            reading_band: document.getElementById("examinerReadingBand").value,
+            listening_band: document.getElementById("examinerListeningBand").value,
+            writing_task1_band: document.getElementById("examinerWritingTask1Band").value,
+            writing_task2_band: document.getElementById("examinerWritingTask2Band").value,
+            writing_band: document.getElementById("examinerWritingBand").value,
+            examiner_note: document.getElementById("examinerNote").value
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+          throw new Error(data.error || "Unable to save examiner review");
+        }
+
+        status.textContent = "Saved.";
+      } catch (err) {
+        status.textContent = `Could not save: ${err.message}`;
+      } finally {
+        if (button) {
+          button.disabled = false;
+        }
+      }
     }
 
     function renderIncorrect(items) {
