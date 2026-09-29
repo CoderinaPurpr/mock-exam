@@ -579,10 +579,19 @@ Return ONLY valid JSON in this exact format:
 }
 
 Rules:
-- Be realistic, not overly harsh
-- Consider word count and task completion
-- Do not over-reward incomplete responses
-- Give IELTS-style practical feedback with maximum 3 example sentences
+- Score each criterion independently. Do not give identical scores across all four criteria unless the response genuinely performs at the same band in all four areas.
+- Use 0.5 band increments only.
+- Do not assume competent writing is Band 7. Band 7 requires consistently strong performance, not merely clear or understandable writing.
+- A response with noticeable repetition, limited development, mechanical cohesion, simple vocabulary, or recurring grammar errors will usually fall below Band 7.
+- Band 6 may still contain a clear position and relevant ideas, but development, cohesion, vocabulary range, or grammar control may be uneven.
+- Band 5 should be used when ideas are only partly developed, organisation is limited, vocabulary is repetitive or basic, or grammatical errors are frequent.
+- Penalise under-length responses and incomplete task coverage.
+- For Task 1, check whether there is a clear overview and whether the main features and comparisons are appropriately selected.
+- For Task 2, check whether all parts of the prompt are addressed, the position is clear, and ideas are sufficiently developed and supported.
+- Judge vocabulary by range, precision, collocation and repetition, not by occasional advanced words.
+- Judge grammar by both range and accuracy. Complex sentences should not receive high credit if they contain frequent errors.
+- Base every score on evidence in the candidate response. Do not award a higher band simply because the essay is fluent or easy to read.
+- Give IELTS-style practical feedback with maximum 3 example sentences.
 `;
 
   const response = await fetch(
@@ -618,16 +627,28 @@ Rules:
 
   const assessment = JSON.parse(data.choices[0].message.content);
 
-  for (const field of [
-    "overallBand",
+  const criterionFields = [
     "taskScore",
     "coherence",
     "vocabulary",
     "grammar"
-  ]) {
+  ];
+
+  for (const field of criterionFields) {
     if (typeof assessment[field] === "number") {
-      assessment[field] = Math.round(assessment[field] * 2) / 2;
+      assessment[field] = Math.max(
+        0,
+        Math.min(9, Math.round(assessment[field] * 2) / 2)
+      );
     }
+  }
+
+  if (criterionFields.every(field => typeof assessment[field] === "number")) {
+    const average =
+      criterionFields.reduce((sum, field) => sum + assessment[field], 0) /
+      criterionFields.length;
+
+    assessment.overallBand = Math.round(average * 2) / 2;
   }
 
   return assessment;
