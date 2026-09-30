@@ -44,6 +44,21 @@
     .error {
       color: #a00;
     }
+
+    .score-cell {
+      white-space: nowrap;
+      line-height: 1.4;
+    }
+
+    .score-cell span {
+      display: block;
+    }
+
+    .admin-table th:nth-child(4),
+    .admin-table th:nth-child(5),
+    .admin-table th:nth-child(6) {
+      min-width: 120px;
+    }
   </style>
 </head>
 <body>
@@ -106,19 +121,19 @@
             <td>${escapeHtml(submission.name || "")}</td>
             <td>${escapeHtml(submission.email || "")}</td>
             <td>${formatDate(submission.created_at)}</td>
-            <td>${formatScoreWithBand(
+            <td class="score-cell">${formatScoreWithBand(
               submission.reading_score,
               submission.reading_total,
               academicReadingBand
             )}</td>
 
-            <td>${formatScoreWithBand(
+            <td class="score-cell">${formatScoreWithBand(
               submission.listening_score,
               submission.listening_total,
               listeningBand
             )}</td>
 
-            <td>${formatWritingAi(
+            <td class="score-cell">${formatWritingAi(
               submission.writing_task1_ai_band,
               submission.writing_task2_ai_band
             )}</td>
@@ -149,7 +164,7 @@
 
     return band === null
       ? scoreText
-      : `${scoreText} · Band ${band.toFixed(1)}`;
+      : `<span>${scoreText}</span><span>Band ${band.toFixed(1)}</span>`;
   }
 
   function formatWritingAi(task1Band, task2Band) {
@@ -170,7 +185,7 @@
         ? "N/A"
         : Number(task2Band).toFixed(1);
 
-    return `T1 ${task1} · T2 ${task2}`;
+    return `<span>T1 ${task1}</span><span>T2 ${task2}</span>`;
   }
 
   function academicReadingBand(score) {
